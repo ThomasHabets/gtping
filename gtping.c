@@ -179,7 +179,7 @@ recvEchoReply(int fd)
 			printf("ICMP destination unreachable\n");
 			return 1;
 		default:
-			errno = err;
+			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s",
 				argv0, fd, strerror(errno));
 			return -err;
