@@ -29,19 +29,24 @@ struct GtpEcho {
 	u_int16_t seq;
 	char npdu;
 	char next;
-	//char padding[6];
 };
 #pragma pack()
 
 static double version = 0.10f;
 
 static volatile int time_to_die = 0;
+static int curSeq = 0;
+#define SENDTIMES_SIZE 100
+static double sendTimes[SENDTIMES_SIZE];
 
 /* from cmdline */
 static int verbose = 0;
 static const char *argv0 = 0;
 static const char *target = 0, *targetip = 0;
 static double interval = 1;
+
+
+static double gettimeofday_dbl();
 
 /**
  *
@@ -101,6 +106,8 @@ sendEcho(int fd, int seq)
 	gtp.npdu = 0x00;
 	gtp.next = 0x00;
 
+	sendTimes[seq % SENDTIMES_SIZE] = gettimeofday_dbl();
+
 	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
 					   sizeof(struct GtpEcho), 0)) {
 		err = errno;
@@ -119,8 +126,11 @@ recvEchoReply(int fd)
 	int err;
 	struct GtpEcho gtp;
 	int n;
-	double lag = 123; /* FIXME */
+	double now;
+	char lag[128];
 
+	now = gettimeofday_dbl();
+	
 	memset(&gtp, 0, sizeof(struct GtpEcho));
 
 	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
@@ -135,16 +145,21 @@ recvEchoReply(int fd)
 			return -err;
 		}
 	}
-	if (gtp.msg == 0x02) {
-		printf("%u bytes from %s: seq=%u time=%.1f ms\n",
-		       n,
-		       targetip,
-		       htons(gtp.seq),
-		       lag*1000
-		       );
-	} else {
+	if (gtp.msg != 0x02) {
 		printf("Got other type of msg?! %d\n", gtp.msg);
+		return 0;
 	}
+
+	if (curSeq - htons(gtp.seq) >= SENDTIMES_SIZE) {
+		strcpy(lag, "Inf");
+	} else {
+		snprintf(lag, sizeof(lag), "%.1f ms", 
+			 1000*(now-sendTimes[htons(gtp.seq)%SENDTIMES_SIZE]));
+	}
+	printf("%u bytes from %s: seq=%u time=%s\n",
+	       n,
+	       targetip,
+	       htons(gtp.seq),lag);
 	return 0;
 }
 
@@ -181,7 +196,6 @@ mainloop(int fd)
 	unsigned recvd = 0;
 	double lastping = 0;
 	double curping;
-	int seq = 0;
 
 	printf("GTPING %s (%s) %d bytes of data.\n",
 	       target,targetip,
@@ -195,9 +209,9 @@ mainloop(int fd)
 		curping = gettimeofday_dbl();
 		if (curping > lastping + interval) {
 			if (verbose) {
-				printf("Sending ping seq %d...\n", seq);
+				printf("Sending ping seq %d...\n", curSeq);
 			}
-			if (0 > sendEcho(fd, seq++)) {
+			if (0 > sendEcho(fd, curSeq++)) {
 				return 1;
 			}
 			sent++;
