@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -W
+CFLAGS=-g -Wall -W -O2 -pipe
 LDLIBS=-lm
 
 all: gtping
