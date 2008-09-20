@@ -254,10 +254,10 @@ mainloop(int fd)
 
 	startTime = gettimeofday_dbl();
 
-	printf("GTPING %s (%s) %d bytes of data.\n",
+	printf("GTPING %s (%s) %u bytes of data.\n",
 	       options.target,
 	       options.targetip,
-	       sizeof(struct GtpEcho));
+	       (int)sizeof(struct GtpEcho));
 
 	for(;!time_to_die;) {
 		struct pollfd fds;
