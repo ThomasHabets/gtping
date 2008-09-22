@@ -64,7 +64,7 @@ struct Options {
 	const char *targetip;
 };
 
-static const double version = 0.10f;
+static const double version = 0.11f;
 
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
