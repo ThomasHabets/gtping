@@ -1,0 +1,15 @@
+gtping/README
+
+ GTP Ping
+
+   By Thomas Habets <thomas@habets.pp.se>
+
+
+Description
+-----------
+Like ping(8), but uses GTP ping requests to ping GGSNs and anything
+else that will answer them.
+
+
+-----------------------------------------------------------------------------
+Send questions/suggestions/patches/rants/money/routers to thomas@habets.pp.se

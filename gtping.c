@@ -1,6 +1,29 @@
-/**
- * GTP Ping.
- * By: Thomas Habets <thomas@habets.pp.se> 2008
+/** gtping/gtping.c
+ *
+ * GTP Ping
+ *
+ * By Thomas Habets <thomas@habets.pp.se> 2008
+ *
+ * Send GTP Ping and time the reply.
+ *
+ *
+ */
+/*
+ *  Copyright (C) 2008 Thomas Habets <thomas@habets.pp.se>
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include <string.h>
 #include <errno.h>
@@ -41,7 +64,7 @@ struct Options {
 	const char *targetip;
 };
 
-static double version = 0.10f;
+static const double version = 0.10f;
 
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
@@ -348,7 +371,8 @@ usage(int err)
 {
 	printf("Usage: %s [ -hv ] [ -c <count> ] [ -p <port> ] "
 	       "[ -w <time> ] <target>\n"
-	       "\t-c <count>  Stop after sending count pings. (default: 0=Infinite)\n"
+	       "\t-c <count>  Stop after sending count pings. "
+	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
 	       "\t-p <port>   GTP-C UDP port to ping (default: %d)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
