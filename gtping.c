@@ -36,6 +36,7 @@ struct Options {
 	int port;
 	int verbose;
 	double interval;
+	unsigned int count;
 	const char *target;
 	const char *targetip;
 };
@@ -43,7 +44,7 @@ struct Options {
 static double version = 0.10f;
 
 static volatile int time_to_die = 0;
-static int curSeq = 0;
+static unsigned int curSeq = 0;
 #define SENDTIMES_SIZE 100
 static double startTime;
 static double sendTimes[SENDTIMES_SIZE];
@@ -59,6 +60,7 @@ static struct Options options = {
 	port: DEFAULT_PORT,
 	verbose: DEFAULT_VERBOSE,
 	interval: DEFAULT_INTERVAL,
+	count: 0,
 	target: 0,
 	targetip: 0,
 };
@@ -266,6 +268,9 @@ mainloop(int fd)
 
 		curping = gettimeofday_dbl();
 		if (curping > lastping + options.interval) {
+			if (options.count && (curSeq == options.count)) {
+				break;
+			}
 			if (0 > sendEcho(fd, curSeq++)) {
 				return 1;
 			}
@@ -341,11 +346,13 @@ mainloop(int fd)
 static void
 usage(int err)
 {
-	printf("Usage: %s [ -hv ] [ -p <port> ] [ -w <time> ] <target>\n"
-	       "\t-h         Show this help text\n"
-	       "\t-p <port>  GTP-C UDP port to ping (default: %d)\n"
-	       "\t-v         Increase verbosity level (default: %d)\n"
-	       "\t-w <time>  Time between pings (default: %.1f)\n",
+	printf("Usage: %s [ -hv ] [ -c <count> ] [ -p <port> ] "
+	       "[ -w <time> ] <target>\n"
+	       "\t-c <count>  Stop after sending count pings. (default: 0=Infinite)\n"
+	       "\t-h          Show this help text\n"
+	       "\t-p <port>   GTP-C UDP port to ping (default: %d)\n"
+	       "\t-v          Increase verbosity level (default: %d)\n"
+	       "\t-w <time>   Time between pings (default: %.1f)\n",
 	       argv0, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
 	exit(err);
 }
@@ -364,13 +371,16 @@ main(int argc, char **argv)
 	argv0 = argv[0];
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "hp:vw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:hp:vw:"))) {
 			switch(c) {
+			case 'c':
+				options.count = strtoul(optarg, 0, 0);
+				break;
 			case 'h':
 				usage(0);
 				break;
 			case 'p':
-				options.port = atoi(optarg);
+				options.port = strtoul(optarg, 0, 0);
 				break;
 			case 'v':
 				options.verbose++;
