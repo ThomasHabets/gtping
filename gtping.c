@@ -197,7 +197,7 @@ recvEchoReply(int fd)
 		strcpy(lag, "Inf");
 	} else {
 		double lagf = (now-sendTimes[htons(gtp.seq)%SENDTIMES_SIZE]);
-		snprintf(lag, sizeof(lag), "%.1f ms", 1000 * lagf);
+		snprintf(lag, sizeof(lag), "%.2f ms", 1000 * lagf);
 		totalTime += lagf;
 		totalTimeSquared += lagf * lagf;
 		totalTimeCount++;
@@ -329,15 +329,15 @@ mainloop(int fd)
 	       (int)(1000*(gettimeofday_dbl()-startTime)));
 	if (totalTimeCount) {
 		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms",
-		       totalMin,
-		       100.0*(totalTime / totalTimeCount),
-		       totalMax,
-		       sqrt((totalTimeSquared -
-			     (totalTime * totalTime)
-			     /totalTimeCount)/totalTimeCount));
+		       1000*totalMin,
+		       1000*(totalTime / totalTimeCount),
+		       1000*totalMax,
+		       1000*sqrt((totalTimeSquared -
+				  (totalTime * totalTime)
+				  /totalTimeCount)/totalTimeCount));
 	}
 	printf("\n");
-	return recvd > 0;
+	return recvd == 0;
 }
 
 /**
