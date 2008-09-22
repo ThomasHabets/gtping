@@ -13,7 +13,7 @@ all: gtping
 V=$(shell $(GREP) version gtping.c|$(GREP) const|$(SED) 's:[a-z =]*::;s:f;::')
 dist:
 	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | gzip -9 > gtping-$(V).tar.gz
-	$(GPG) -b -a $(DFILE)
+	$(GPG) -b -a gtping-$(V).tar.gz
 
 clean:
 	$(RM) -f *.o gtping
