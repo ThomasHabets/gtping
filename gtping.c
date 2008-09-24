@@ -41,6 +41,12 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+/* For those OSs that don't read RFC3493, even though their manpage
+ * points to it. */
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG 0
+#endif
+
 #pragma pack(1)
 struct GtpEcho {
 	char flags;
