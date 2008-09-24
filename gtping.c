@@ -119,7 +119,7 @@ setupSocket()
 
 	if (0 > (fd = socket(PF_INET, SOCK_DGRAM, 0))) {
 		err = errno;
-		fprintf(stderr, "%s: socket(FD_INET, SOCK_DGRAM, 0): %s",
+		fprintf(stderr, "%s: socket(FD_INET, SOCK_DGRAM, 0): %s\n",
 			argv0, strerror(errno));
 		return -err;
 	}
@@ -130,7 +130,7 @@ setupSocket()
 	sa.sin_addr.s_addr = inet_addr(options.target);
 	if (connect(fd, (struct sockaddr*)&sa, sizeof(struct sockaddr_in))) {
 		err = errno;
-		fprintf(stderr, "%s: connect(%d, ...): %s",
+		fprintf(stderr, "%s: connect(%d, ...): %s\n",
 			argv0, fd, strerror(errno));
 		close(fd);
 		return -err;
@@ -170,7 +170,7 @@ sendEcho(int fd, int seq)
 	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
 					   sizeof(struct GtpEcho), 0)) {
 		err = errno;
-		fprintf(stderr, "%s: send(%d, ...): %s",
+		fprintf(stderr, "%s: send(%d, ...): %s\n",
 			argv0, fd, strerror(errno));
 		return -err;
 	}
@@ -205,7 +205,7 @@ recvEchoReply(int fd)
 			return 1;
 		default:
 			err = errno;
-			fprintf(stderr, "%s: recv(%d, ...): %s",
+			fprintf(stderr, "%s: recv(%d, ...): %s\n",
 				argv0, fd, strerror(errno));
 			return -err;
 		}
@@ -256,7 +256,8 @@ gettimeofday_dbl()
 {
 	struct timeval tv;
         if (gettimeofday(&tv, NULL)) {
-		fprintf(stderr,"%s: gettimeofday(): %s",argv0,strerror(errno));
+		fprintf(stderr,"%s: gettimeofday(): %s\n",
+			argv0,strerror(errno));
 		return time(0);
 	}
 	return tv2dbl(&tv);
@@ -426,7 +427,7 @@ main(int argc, char **argv)
 	options.target = options.targetip = argv[optind];
 
 	if (SIG_ERR == signal(SIGINT, sigint)) {
-		fprintf(stderr, "%s: signal(SIGINT, ...): %s",
+		fprintf(stderr, "%s: signal(SIGINT, ...): %s\n",
 			argv0, strerror(errno));
 		return 1;
 	}
