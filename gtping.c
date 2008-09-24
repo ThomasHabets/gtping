@@ -71,7 +71,7 @@ struct Options {
 	char *targetip;      /* IPv* address string */
 };
 
-static const double version = 0.11f;
+static const double version = 0.12f;
 
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
