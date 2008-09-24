@@ -1,12 +1,13 @@
 # gtping/Makefile
 #
 CFLAGS=-g -Wall -W -O2 -pipe
-LDLIBS=-lm
+LDLIBS=-lm -lsocket
 RM=rm
 SED=sed
 GPG=gpg
 GREP=grep
 GIT=git
+CC=gcc
 
 all: gtping
 

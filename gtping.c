@@ -51,9 +51,9 @@
 struct GtpEcho {
 	char flags;
 	char msg;
-	u_int16_t len;	
-	u_int32_t teid;
-	u_int16_t seq;
+	uint16_t len;	
+	uint32_t teid;
+	uint16_t seq;
 	char npdu;
 	char next;
 };
