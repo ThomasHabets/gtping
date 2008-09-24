@@ -39,6 +39,7 @@
 #include <sys/time.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <netdb.h>
 
 #pragma pack(1)
 struct GtpEcho {
@@ -60,8 +61,8 @@ struct Options {
 	int verbose;
 	double interval;
 	unsigned int count;
-	const char *target;
-	const char *targetip;
+	const char *target;  /* what is on the cmdline */
+	char *targetip;      /* IPv* address string */
 };
 
 static const double version = 0.11f;
@@ -102,6 +103,7 @@ sigint(int unused)
 
 /**
  * Create socket and "connect" it to target
+ * allocates and sets options.targetip
  *
  * return fd, or <0 on error
  */
@@ -110,32 +112,93 @@ setupSocket()
 {
 	int fd;
 	int err;
-	struct sockaddr_in sa;
+	struct addrinfo *addrs = 0;
+	struct addrinfo hints;
+	char port[32];
 
 	if (options.verbose > 1) {
 		fprintf(stderr, "%s: setupSocket(%s)\n",
 			argv0, options.target);
 	}
-
-	if (0 > (fd = socket(PF_INET, SOCK_DGRAM, 0))) {
-		err = errno;
-		fprintf(stderr, "%s: socket(FD_INET, SOCK_DGRAM, 0): %s\n",
-			argv0, strerror(errno));
-		return -err;
-	}
+	options.targetip = 0;
 	
-	memset(&sa, 0, sizeof(struct sockaddr_in));
-	sa.sin_family = AF_INET;
-	sa.sin_port = htons(options.port);
-	sa.sin_addr.s_addr = inet_addr(options.target);
-	if (connect(fd, (struct sockaddr*)&sa, sizeof(struct sockaddr_in))) {
+	snprintf(port, sizeof(port), "%u", options.port);
+
+	if (!(options.targetip = malloc(NI_MAXHOST))) {
+		err = errno;
+		fprintf(stderr, "%s: malloc(NI_MAXHOST): %s\n",
+			argv0, strerror(err));
+		goto errout;
+	}
+
+	/* resolve to sockaddr */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	if (0 > (err = getaddrinfo(options.target,
+				   port,
+				   &hints,
+				   &addrs))) {
+		fprintf(stderr, "%s: getaddrinfo(): %s\n",
+			argv0, gai_strerror(err));
+		return -errno;
+	}
+
+	/* get ip address string options.targetip */
+	if ((err = getnameinfo(addrs->ai_addr,
+			       addrs->ai_addrlen,
+			       options.targetip,
+			       NI_MAXHOST,
+			       NULL, 0,
+			       NI_NUMERICHOST))) {
+		err = errno;
+		fprintf(stderr, "%s: getnameinfo(): %s\n",
+			argv0,	gai_strerror(err));
+		goto errout;
+	}
+	if (options.verbose) {
+		fprintf(stderr, "%s: target=<%s> targetip=<%s>\n",
+			argv0,
+			options.target,
+			options.targetip);
+	}
+
+	/* socket() */
+	if (0 > (fd = socket(addrs->ai_family,
+			     addrs->ai_socktype,
+			     addrs->ai_protocol))) {
+		err = errno;
+		fprintf(stderr, "%s: socket(%d, %d, %d): %s\n",
+			argv0,
+			addrs->ai_family,
+			addrs->ai_socktype,
+			addrs->ai_protocol,
+			strerror(err));
+		goto errout;
+	}
+
+	/* connect() */
+	if (connect(fd,
+		    addrs->ai_addr,
+		    addrs->ai_addrlen)) {
 		err = errno;
 		fprintf(stderr, "%s: connect(%d, ...): %s\n",
-			argv0, fd, strerror(errno));
+			argv0, fd, strerror(err));
 		close(fd);
-		return -err;
+		goto errout;
 	}
+
+	freeaddrinfo(addrs);
 	return fd;
+ errout:
+	if (addrs) {
+		freeaddrinfo(addrs);
+	}
+	if (options.targetip) {
+		free(options.targetip);
+	}
+	return -err;
 }
 
 /**
@@ -424,7 +487,7 @@ main(int argc, char **argv)
 		usage(2);
 	}
 
-	options.target = options.targetip = argv[optind];
+	options.target = argv[optind];
 
 	if (SIG_ERR == signal(SIGINT, sigint)) {
 		fprintf(stderr, "%s: signal(SIGINT, ...): %s\n",
