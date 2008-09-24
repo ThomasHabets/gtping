@@ -146,9 +146,14 @@ setupSocket()
 				   port,
 				   &hints,
 				   &addrs))) {
+		if (err == EAI_NONAME) {
+			fprintf(stderr, "%s: unknown host %s\n",
+				argv0, options.target);
+			return -1;
+		}
 		fprintf(stderr, "%s: getaddrinfo(): %s\n",
 			argv0, gai_strerror(err));
-		return -errno;
+		goto errout;
 	}
 
 	/* get ip address string options.targetip */
@@ -204,7 +209,10 @@ setupSocket()
 	if (options.targetip) {
 		free(options.targetip);
 	}
-	return -err;
+	if (err > 0) {
+		return -err;
+	}
+	return err;
 }
 
 /**
