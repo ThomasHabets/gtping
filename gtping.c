@@ -41,6 +41,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+/* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
+#define SENDTIMES_SIZE 100
+
 /* For those OSs that don't read RFC3493, even though their manpage
  * points to it. */
 #ifndef AI_ADDRCONFIG
@@ -75,7 +78,6 @@ static const double version = 0.12f;
 
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
-#define SENDTIMES_SIZE 100
 static double startTime;
 static double sendTimes[SENDTIMES_SIZE];
 static unsigned int totalTimeCount = 0;
@@ -111,13 +113,13 @@ sigint(int unused)
  * Create socket and "connect" it to target
  * allocates and sets options.targetip
  *
- * return fd, or <0 on error
+ * return fd, or <0 (-errno) on error
  */
 static int
 setupSocket()
 {
-	int fd;
-	int err;
+	int fd = -1;
+	int err = 0;
 	struct addrinfo *addrs = 0;
 	struct addrinfo hints;
 	char port[32];
@@ -146,13 +148,21 @@ setupSocket()
 				   port,
 				   &hints,
 				   &addrs))) {
-		if (err == EAI_NONAME) {
+		int gai_err;
+		gai_err = err;
+		if (gai_err == EAI_SYSTEM) {
+			err = errno;
+		} else {
+			err = EINVAL;
+		}
+		if (gai_err == EAI_NONAME) {
 			fprintf(stderr, "%s: unknown host %s\n",
 				argv0, options.target);
-			return -1;
+			err = EINVAL;
+			goto errout;
 		}
 		fprintf(stderr, "%s: getaddrinfo(): %s\n",
-			argv0, gai_strerror(err));
+			argv0, gai_strerror(gai_err));
 		goto errout;
 	}
 
@@ -163,9 +173,15 @@ setupSocket()
 			       NI_MAXHOST,
 			       NULL, 0,
 			       NI_NUMERICHOST))) {
-		err = errno;
+		int gai_err;
+		gai_err = err;
+		if (gai_err == EAI_SYSTEM) {
+			err = errno;
+		} else {
+			err = EINVAL;
+		}
 		fprintf(stderr, "%s: getnameinfo(): %s\n",
-			argv0,	gai_strerror(err));
+			argv0,	gai_strerror(gai_err));
 		goto errout;
 	}
 	if (options.verbose) {
@@ -205,12 +221,21 @@ setupSocket()
  errout:
 	if (addrs) {
 		freeaddrinfo(addrs);
+		addrs = 0;
 	}
 	if (options.targetip) {
 		free(options.targetip);
+		options.targetip = 0;
+	}
+	if (err == 0) {
+		err = -EINVAL;
+	}
+	if (fd >= 0) {
+		close(fd);
+		fd = -1;
 	}
 	if (err > 0) {
-		return -err;
+		err = -err;
 	}
 	return err;
 }
