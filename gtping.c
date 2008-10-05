@@ -70,6 +70,7 @@ struct Options {
 	int verbose;
 	double interval;
 	unsigned int count;
+	uint32_t teid;
 	const char *target;  /* what is on the cmdline */
 	char *targetip;      /* IPv* address string */
 };
@@ -262,7 +263,7 @@ sendEcho(int fd, int seq)
 	gtp.flags = 0x32;
 	gtp.msg = 0x01;
 	gtp.len = htons(4);
-	gtp.teid = 0;
+	gtp.teid = htonl(options.teid);
 	gtp.seq = htons(seq);
 	gtp.npdu = 0x00;
 	gtp.next = 0x00;
@@ -311,6 +312,9 @@ recvEchoReply(int fd)
 				argv0, fd, strerror(errno));
 			return -err;
 		}
+	}
+	if (gtp.teid != htonl(options.teid)) {
+		return 1;
 	}
 	if (gtp.msg != 0x02) {
 		fprintf(stderr, "%s: Got non-EchoReply type of msg (%d)\n",
@@ -478,6 +482,7 @@ usage(int err)
 	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
 	       "\t-p <port>   GTP-C UDP port to ping (default: %d)\n"
+	       "\t-t          Transaction ID (default: random)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
 	       "\t-w <time>   Time between pings (default: %.1f)\n",
 	       argv0, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
@@ -496,9 +501,16 @@ main(int argc, char **argv)
 	       version);
 
 	argv0 = argv[0];
+	srand(getpid() ^ time(0));
+
+	/* don't know what RAND_MAX is, so just assume at least 8bits */
+	options.teid = ((((rand() & 0xff) * 256
+			  + (rand() & 0xff)) * 256
+			 + (rand() & 0xff)) * 256
+			+ (rand() & 0xff));
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:hp:vw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:hp:t:vw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
@@ -508,6 +520,9 @@ main(int argc, char **argv)
 				break;
 			case 'p':
 				options.port = strtoul(optarg, 0, 0);
+				break;
+			case 't':
+				options.teid = strtoul(optarg, 0, 0);
 				break;
 			case 'v':
 				options.verbose++;
@@ -520,6 +535,10 @@ main(int argc, char **argv)
 				usage(2);
 			}
 		}
+	}
+	if (options.verbose) {
+		fprintf(stderr, "%s: transaction id: %.8x\n",
+			argv0, options.teid);
 	}
 
 	if (optind + 1 != argc) {
