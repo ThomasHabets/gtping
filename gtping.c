@@ -53,8 +53,8 @@
 #undef ERR_INSPECTION
 #define ERR_INSPECTION 1
 /* from /usr/include/linux/in6.h */
-#define IPV6_RECVHOPLIMIT      51
-/* #define IPV6_HOPLIMIT           52 */
+#define REAL_IPV6_RECVHOPLIMIT      51
+#define REAL_IPV6_HOPLIMIT           52
 #endif
 
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
@@ -90,6 +90,7 @@ struct Options {
 	const char *target;  /* what is on the cmdline */
 	char *targetip;      /* IPv* address string */
 	int ttl;
+	int tos;
 };
 
 static const double version = 0.12f;
@@ -114,6 +115,7 @@ static struct Options options = {
 	target: 0,
 	targetip: 0,
 	ttl: -1,
+	tos: -1,
 	teid: 0,
 };
 
@@ -253,28 +255,57 @@ setupSocket()
 		}
 		if (setsockopt(fd,
 			       SOL_IPV6,
-			       IPV6_RECVHOPLIMIT,
+			       REAL_IPV6_RECVHOPLIMIT,
 			       &on,
 			       sizeof(on))) {
 			fprintf(stderr,
 				"%s: setsockopt(%d, SOL_IPV6, "
-				"IP_RECVHOPLIMIT, on): %s\n",
+				"IPV6_RECVHOPLIMIT, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
 	}
 #endif
-	if (options.ttl > 0) {
-		if (setsockopt(fd, SOL_IP,
-			       IP_TTL,
-			       &options.ttl,sizeof(options.ttl))) {
-			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IP, IP_TTL, "
-				"%d): %s", argv0, fd, options.ttl,
-				strerror(errno));
+	if (addrs->ai_family == AF_INET) {
+		if (options.ttl > 0) {
+			if (setsockopt(fd,
+				       SOL_IP,
+				       IP_TTL,
+				       &options.ttl,
+				       sizeof(options.ttl))) {
+				fprintf(stderr,
+					"%s: setsockopt(%d, SOL_IP, IP_TTL, "
+					"%d): %s", argv0, fd, options.ttl,
+					strerror(errno));
+			}
+		}
+		if (options.tos >= 0) {
+			if (setsockopt(fd,
+				       SOL_IP,
+				       IP_TOS,
+				       &options.tos,
+				       sizeof(options.tos))) {
+				fprintf(stderr,
+					"%s: setsockopt(%d, SOL_IP, IP_TOS, "
+					"%d): %s", argv0, fd, options.ttl,
+					strerror(errno));
+			}
 		}
 	}
-
-	/* FIXME TOS */
+	if (addrs->ai_family == AF_INET6) {
+		if (options.ttl > 0) {
+			if (setsockopt(fd,
+				       SOL_IPV6,
+				       IPV6_HOPLIMIT,
+				       &options.ttl,
+				       sizeof(options.ttl))) {
+				fprintf(stderr,
+					"%s: setsockopt(%d, SOL_IPV6, "
+					"IPV6_HOPLIMIT, %d): %s",
+					argv0, fd, options.ttl,
+					strerror(errno));
+			}
+		}
+	}
 
 	/* connect() */
 	if (connect(fd,
@@ -466,7 +497,9 @@ handleRecvErr(int fd)
 		if ((cmsg->cmsg_level == SOL_IP
 		     || cmsg->cmsg_level == SOL_IPV6)
 		    && (cmsg->cmsg_type == IP_TTL
-			|| cmsg->cmsg_type == IPV6_HOPLIMIT)) {
+			|| cmsg->cmsg_type == IPV6_HOPLIMIT
+			|| cmsg->cmsg_type == REAL_IPV6_HOPLIMIT
+			)) {
 			returnttl = *(int*)CMSG_DATA(cmsg);
 		}
 	}
@@ -484,15 +517,17 @@ handleRecvErr(int fd)
 				break;
 			case IP_TTL:
 			case IPV6_HOPLIMIT:
+			case REAL_IPV6_HOPLIMIT:
 				/* ignore */
 				break;
 			default:
 				fprintf(stderr,
-					"%s: Got cmsg type: %d",
+					"%s: Got cmsg type: %d %d %d",
 					argv0,
-					cmsg->cmsg_type);
+					cmsg->cmsg_type, REAL_IPV6_HOPLIMIT,
+					IP_TTL);
 				if (0 < returnttl) {
-					fprintf(stderr, ". return TTL: %d",
+					fprintf(stderr, ". Return TTL: %d",
 						returnttl);
 				}
 				printf("\n");
