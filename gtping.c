@@ -54,7 +54,7 @@
 #define ERR_INSPECTION 1
 /* from /usr/include/linux/in6.h */
 #define IPV6_RECVHOPLIMIT      51
-#define IPV6_HOPLIMIT           52
+/* #define IPV6_HOPLIMIT           52 */
 #endif
 
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
