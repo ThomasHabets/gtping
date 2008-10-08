@@ -41,6 +41,17 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+/* In-depth error handling only implemented for linux so far */
+#define ERR_INSPECTION 0
+
+#ifdef __linux__
+#define __u8 unsigned char
+#define __u32 unsigned int
+#include <linux/errqueue.h>
+#undef ERR_INSPECTION
+#define ERR_INSPECTION 1
+#endif
+
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
 #define SENDTIMES_SIZE 100
 
@@ -73,6 +84,7 @@ struct Options {
 	uint32_t teid;
 	const char *target;  /* what is on the cmdline */
 	char *targetip;      /* IPv* address string */
+	int ttl;
 };
 
 static const double version = 0.12f;
@@ -96,6 +108,7 @@ static struct Options options = {
 	count: 0,
 	target: 0,
 	targetip: 0,
+	ttl: -1,
 };
 
 static double gettimeofday_dbl();
@@ -123,7 +136,6 @@ setupSocket()
 	int err = 0;
 	struct addrinfo *addrs = 0;
 	struct addrinfo hints;
-	int on;
 
 	if (options.verbose > 1) {
 		fprintf(stderr, "%s: setupSocket(%s)\n",
@@ -202,6 +214,40 @@ setupSocket()
 		goto errout;
 	}
 
+#if ERR_INSPECTION
+	{
+		int on = 1;
+		if (setsockopt(fd, SOL_IP, IP_RECVERR, &on, sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, IP_RECVERR, on): "
+				"%s\n", argv0, fd, strerror(errno));
+		}
+		on = 1;
+		if (setsockopt(fd, SOL_IP, IPV6_RECVERR, &on, sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, IPV6_RECVERR, "
+				"on): %s\n", argv0, fd, strerror(errno));
+		}
+		if (setsockopt(fd, SOL_IP, IP_RECVTTL, &on, sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, IP_RECVTTL, on): "
+				"%s\n", argv0, fd, strerror(errno));
+		}
+	}
+#endif
+	if (options.ttl > 0) {
+		if (setsockopt(fd, SOL_IP,
+			       IP_TTL,
+			       &options.ttl,sizeof(options.ttl))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, IP_TTL, "
+				"%d): %s", argv0, fd, options.ttl,
+				strerror(errno));
+		}
+	}
+
+	/* FIXME TOS */
+
 	/* connect() */
 	if (connect(fd,
 		    addrs->ai_addr,
@@ -238,7 +284,8 @@ setupSocket()
 }
 
 /**
- * return 0 on succes, <0 on fail
+ * return 0 on succes, <0 on fail (nothing sent), >0 on sent, but something
+ * failed (do increment sent counter)
  */
 static int
 sendEcho(int fd, int seq)
@@ -271,10 +318,141 @@ sendEcho(int fd, int seq)
 		err = errno;
 		fprintf(stderr, "%s: send(%d, ...): %s\n",
 			argv0, fd, strerror(errno));
+		if (err == ECONNREFUSED) {
+			return err;
+		}
 		return -err;
 	}
 	return 0;
 }
+
+#if ERR_INSPECTION
+static void
+handleRecvErr(int fd)
+{
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	char cbuf[512];
+	char buf[5120];
+	struct sockaddr_storage sa;
+	struct iovec iov;
+        struct sock_extended_err *see = 0;
+	int rethops = -1;
+	int isicmp = 0;
+	int n;
+	/* get error data */
+	iov.iov_base = buf;
+	iov.iov_len = sizeof(buf);
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = (char*)&sa;
+	msg.msg_namelen = sizeof(sa);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = cbuf;
+	msg.msg_controllen = sizeof(cbuf);
+	
+	if (0 > (n = recvmsg(fd, &msg, MSG_ERRQUEUE))) {
+		if (errno == EAGAIN) {
+			return;
+		}
+		fprintf(stderr, "%s: recvmsg(%d, ..., MSG_ERRQUEUE): %s\n",
+			argv0, fd, strerror(errno));
+		return;
+	}
+
+	/* Find err struct & ttl */
+	for (cmsg = CMSG_FIRSTHDR(&msg);
+	     cmsg;
+	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+                if (cmsg->cmsg_level == SOL_IP) {
+                        if (cmsg->cmsg_type == IP_RECVERR
+			    || cmsg->cmsg_type == IPV6_RECVERR) {
+				see = (struct sock_extended_err*)
+					CMSG_DATA(cmsg);
+			} else if (cmsg->cmsg_type == IP_TTL) {
+                                rethops = *(int*)CMSG_DATA(cmsg);
+			} else {
+				fprintf(stderr,
+					"%s: Got cmsg type: %d\n",
+					argv0, cmsg->cmsg_type);
+			}
+
+		}
+	}
+	if (options.verbose > 1) {
+		fprintf(stderr, "%s: TTL: %d\n", argv0, rethops);
+	}
+	if (!see) {
+		fprintf(stderr, "%s: Error, but no error info\n", argv0);
+		return;
+	}
+
+	/* print "From ...: */
+        if (see->ee_origin == SO_EE_ORIGIN_LOCAL) {
+		printf("From local system: ");
+	} else {
+		struct sockaddr *offender = SO_EE_OFFENDER(see);
+		char abuf[NI_MAXHOST];
+		int err;
+		
+		if (offender->sa_family == AF_UNSPEC) {
+			printf("From <unknown>: ");
+		} else if ((err = getnameinfo(offender,
+					      sizeof(struct sockaddr_storage),
+					      abuf, NI_MAXHOST,
+					      NULL, 0,
+					      NI_NUMERICHOST))) {
+			fprintf(stderr, "%s: getnameinfo(): %s\n",
+				argv0, gai_strerror(err));
+			printf("From <unknown>: ");
+		} else {
+			printf("From %s: ", abuf);
+		}
+	}
+	
+	if (see->ee_origin == SO_EE_ORIGIN_ICMP6
+	    || see->ee_origin == SO_EE_ORIGIN_ICMP) {
+		isicmp = 1;
+	}
+
+	/* Print error message */
+	switch (see->ee_errno) {
+	case ECONNREFUSED:
+		printf("Port closed\n");
+		break;
+	case EMSGSIZE:
+		printf("PMTU %d\n", see->ee_info);
+		break;
+	case EPROTO:
+		printf("Protocol error\n");
+		break;
+	case ENETUNREACH:
+		printf("Network unreachable\n");
+		break;
+	case EACCES:
+		printf("Access denied\n");
+		break;
+	case EHOSTUNREACH:
+		if (isicmp && see->ee_type == 11 && see->ee_code == 0) {
+                        printf("Time to live exceeded\n");
+                } else {
+			printf("Host unreachable\n");
+		}
+		break;
+	default:
+		printf("Unhandled type of error %d\n", see->ee_errno);
+		break;
+	}
+
+}
+#else
+static void
+handleRecvErr(int fd)
+{
+	fd = fd;
+	printf("Destination unreachable (closed, filtered or TTL exceeded)\n");
+}
+#endif
 
 /**
  * return 0 on success/got reply, <0 on fail, >1 on success, no packet
@@ -299,21 +477,23 @@ recvEchoReply(int fd)
 	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
 		switch(errno) {
 		case ECONNREFUSED:
+			printf("FIXME: test this code path!\n");
+			handleRecvErr(fd);
 		case EINTR:
-			printf("ICMP destination unreachable\n");
 			return 1;
 		default:
 			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s\n",
 				argv0, fd, strerror(errno));
-			return -err;
+			return err;
 		}
 	}
 	if (gtp.teid != htonl(options.teid)) {
 		return 1;
 	}
 	if (gtp.msg != 0x02) {
-		fprintf(stderr, "%s: Got non-EchoReply type of msg (%d)\n",
+		fprintf(stderr,
+			"%s: Got non-EchoReply type of msg (type: %d)\n",
 			argv0, gtp.msg);
 		return 0;
 	}
@@ -397,15 +577,17 @@ mainloop(int fd)
 			if (options.count && (curSeq == options.count)) {
 				break;
 			}
-			if (0 > sendEcho(fd, curSeq++)) {
-				return 1;
+			if (0 <= sendEcho(fd, curSeq++)) {
+				sent++;
+				lastping = curping;
 			}
-			sent++;
-			lastping = curping;
 		}
 
 		fds.fd = fd;
 		fds.events = POLLIN;
+		if (ERR_INSPECTION) {
+			fds.events |= POLLERR;
+		}
 		fds.revents = 0;
 		
 		timewait = (lastping + options.interval) - gettimeofday_dbl();
@@ -414,7 +596,12 @@ mainloop(int fd)
 		}
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
-			n = recvEchoReply(fd);
+			if (fds.revents & POLLERR && ERR_INSPECTION) {
+				handleRecvErr(fd);
+			}
+			if (fds.revents & POLLIN) {
+				n = recvEchoReply(fd);
+			}
 			if (!n) {
 				recvd++;
 			} else if (n > 0) {
@@ -473,12 +660,13 @@ static void
 usage(int err)
 {
 	printf("Usage: %s [ -hv ] [ -c <count> ] [ -p <port> ] "
-	       "[ -w <time> ] <target>\n"
+	       "[ -w <time> ] [ -T <ttl> ] <target>\n"
 	       "\t-c <count>  Stop after sending count pings. "
 	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
 	       "\t-p <port>   GTP-C UDP port to ping (default: %s)\n"
 	       "\t-t          Transaction ID (default: arbitrary)\n"
+	       "\t-T          IP TTL (default: system default)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
 	       "\t-w <time>   Time between pings (default: %.1f)\n",
 	       argv0, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
@@ -506,7 +694,7 @@ main(int argc, char **argv)
 			+ (rand() & 0xff));
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:hp:t:vw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
@@ -519,6 +707,9 @@ main(int argc, char **argv)
 				break;
 			case 't':
 				options.teid = strtoul(optarg, 0, 0);
+				break;
+			case 'T':
+				options.ttl = strtoul(optarg, 0, 0);
 				break;
 			case 'v':
 				options.verbose++;
