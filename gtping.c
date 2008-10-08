@@ -138,7 +138,7 @@ setupSocket()
 	struct addrinfo *addrs = 0;
 	struct addrinfo hints;
 
-	if (options.verbose > 1) {
+	if (options.verbose > 2) {
 		fprintf(stderr, "%s: setupSocket(%s)\n",
 			argv0, options.target);
 	}
@@ -194,7 +194,7 @@ setupSocket()
 			argv0,	gai_strerror(gai_err));
 		goto errout;
 	}
-	if (options.verbose) {
+	if (options.verbose > 1) {
 		fprintf(stderr, "%s: target=<%s> targetip=<%s>\n",
 			argv0,
 			options.target,
@@ -216,23 +216,35 @@ setupSocket()
 	}
 
 #if ERR_INSPECTION
-	{
+	if (addrs->ai_family == AF_INET) {
 		int on = 1;
 		if (setsockopt(fd, SOL_IP, IP_RECVERR, &on, sizeof(on))) {
 			fprintf(stderr,
 				"%s: setsockopt(%d, SOL_IP, IP_RECVERR, on): "
 				"%s\n", argv0, fd, strerror(errno));
 		}
-		on = 1;
-		if (setsockopt(fd, SOL_IP, IPV6_RECVERR, &on, sizeof(on))) {
+		if (setsockopt(fd,
+			       SOL_IP,
+			       IP_RECVTTL,
+			       &on,
+			       sizeof(on))) {
 			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IP, IPV6_RECVERR, "
-				"on): %s\n", argv0, fd, strerror(errno));
+				"%s: setsockopt(%d, SOL_IP, "
+				"IP_RECVTTL, on): %s\n",
+				argv0, fd, strerror(errno));
 		}
-		if (setsockopt(fd, SOL_IP, IP_RECVTTL, &on, sizeof(on))) {
+	}
+	if (addrs->ai_family == AF_INET6) {
+		int on = 1;
+		if (setsockopt(fd,
+			       SOL_IPV6,
+			       IPV6_RECVERR,
+			       &on,
+			       sizeof(on))) {
 			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IP, IP_RECVTTL, on): "
-				"%s\n", argv0, fd, strerror(errno));
+				"%s: setsockopt(%d, SOL_IPV6, "
+				"IPV6_RECVERR, on): %s\n",
+				argv0, fd, strerror(errno));
 		}
 	}
 #endif
@@ -294,11 +306,11 @@ sendEcho(int fd, int seq)
 	int err;
 	struct GtpEcho gtp;
 
-	if (options.verbose > 1) {
+	if (options.verbose > 2) {
 		fprintf(stderr, "%s: sendEcho(%d, %d)\n", argv0, fd, seq);
 	}
 
-	if (options.verbose) {
+	if (options.verbose > 1) {
 		fprintf(stderr,	"%s: Sending GTP ping with seq=%d\n",
 			argv0, curSeq);
 	}
@@ -329,60 +341,10 @@ sendEcho(int fd, int seq)
 
 #if ERR_INSPECTION
 static void
-handleRecvErr(int fd)
+handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
 {
-	struct msghdr msg;
-	struct cmsghdr *cmsg;
-	char cbuf[512];
-	char buf[5120];
-	struct sockaddr_storage sa;
-	struct iovec iov;
-        struct sock_extended_err *see = 0;
-	int rethops = -1;
 	int isicmp = 0;
-	int n;
-	/* get error data */
-	iov.iov_base = buf;
-	iov.iov_len = sizeof(buf);
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_name = (char*)&sa;
-	msg.msg_namelen = sizeof(sa);
-	msg.msg_iov = &iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = cbuf;
-	msg.msg_controllen = sizeof(cbuf);
-	
-	if (0 > (n = recvmsg(fd, &msg, MSG_ERRQUEUE))) {
-		if (errno == EAGAIN) {
-			return;
-		}
-		fprintf(stderr, "%s: recvmsg(%d, ..., MSG_ERRQUEUE): %s\n",
-			argv0, fd, strerror(errno));
-		return;
-	}
 
-	/* Find err struct & ttl */
-	for (cmsg = CMSG_FIRSTHDR(&msg);
-	     cmsg;
-	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-                if (cmsg->cmsg_level == SOL_IP) {
-                        if (cmsg->cmsg_type == IP_RECVERR
-			    || cmsg->cmsg_type == IPV6_RECVERR) {
-				see = (struct sock_extended_err*)
-					CMSG_DATA(cmsg);
-			} else if (cmsg->cmsg_type == IP_TTL) {
-                                rethops = *(int*)CMSG_DATA(cmsg);
-			} else {
-				fprintf(stderr,
-					"%s: Got cmsg type: %d\n",
-					argv0, cmsg->cmsg_type);
-			}
-
-		}
-	}
-	if (options.verbose > 1) {
-		fprintf(stderr, "%s: TTL: %d\n", argv0, rethops);
-	}
 	if (!see) {
 		fprintf(stderr, "%s: Error, but no error info\n", argv0);
 		return;
@@ -419,33 +381,107 @@ handleRecvErr(int fd)
 	/* Print error message */
 	switch (see->ee_errno) {
 	case ECONNREFUSED:
-		printf("Port closed\n");
+		printf("Port closed");
 		break;
 	case EMSGSIZE:
-		printf("PMTU %d\n", see->ee_info);
+		printf("PMTU %d", see->ee_info);
 		break;
 	case EPROTO:
-		printf("Protocol error\n");
+		printf("Protocol error");
 		break;
 	case ENETUNREACH:
-		printf("Network unreachable\n");
+		printf("Network unreachable");
 		break;
 	case EACCES:
-		printf("Access denied\n");
+		printf("Access denied");
 		break;
 	case EHOSTUNREACH:
 		if (isicmp && see->ee_type == 11 && see->ee_code == 0) {
-                        printf("Time to live exceeded\n");
+                        printf("Time to live exceeded");
                 } else {
-			printf("Host unreachable\n");
+			printf("Host unreachable");
 		}
 		break;
 	default:
-		printf("Unhandled type of error %d\n", see->ee_errno);
+		printf("%s", strerror(see->ee_errno));
 		break;
 	}
-
+	if (options.verbose && (0 < returnttl)) {
+		printf(". return TTL: %d.", returnttl);
+	}
+	printf("\n");
 }
+
+static void
+handleRecvErr(int fd)
+{
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	char cbuf[512];
+	char buf[5120];
+	struct sockaddr_storage sa;
+	struct iovec iov;
+	int n;
+	int returnttl = -1;
+
+	/* get error data */
+	iov.iov_base = buf;
+	iov.iov_len = sizeof(buf);
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = (char*)&sa;
+	msg.msg_namelen = sizeof(sa);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = cbuf;
+	msg.msg_controllen = sizeof(cbuf);
+	
+	if (0 > (n = recvmsg(fd, &msg, MSG_ERRQUEUE))) {
+		if (errno == EAGAIN) {
+			return;
+		}
+		fprintf(stderr, "%s: recvmsg(%d, ..., MSG_ERRQUEUE): %s\n",
+			argv0, fd, strerror(errno));
+		return;
+	}
+
+	/* Find ttl */
+	for (cmsg = CMSG_FIRSTHDR(&msg);
+	     cmsg;
+	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+		if ((cmsg->cmsg_level == SOL_IP
+		     || cmsg->cmsg_level == SOL_IPV6)
+		    && (cmsg->cmsg_type == IP_TTL)) {
+			returnttl = *(int*)CMSG_DATA(cmsg);
+		}
+	}
+	for (cmsg = CMSG_FIRSTHDR(&msg);
+	     cmsg;
+	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+                if (cmsg->cmsg_level == SOL_IP
+		    || cmsg->cmsg_level == SOL_IPV6) {
+                        if (cmsg->cmsg_type == IP_RECVERR
+			    || cmsg->cmsg_type == IPV6_RECVERR) {
+				handleRecvErrSEE((struct sock_extended_err*)
+						 CMSG_DATA(cmsg),
+						 returnttl);
+			} else if (cmsg->cmsg_type == IP_TTL) {
+				/* ignore */
+			} else {
+				fprintf(stderr,
+					"%s: Got cmsg type: %d",
+					argv0,
+					cmsg->cmsg_type);
+				if (0 < returnttl) {
+					fprintf(stderr, "return TTL: %d",
+						returnttl);
+				}
+				printf("\n");
+			}
+
+		}
+	}
+}
+
 #else
 static void
 handleRecvErr(int fd)
@@ -467,7 +503,7 @@ recvEchoReply(int fd)
 	double now;
 	char lag[128];
 
-	if (options.verbose > 1) {
+	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
 	}
 
@@ -562,7 +598,7 @@ mainloop(int fd)
 	double lastping = 0;
 	double curping;
 
-	if (options.verbose > 1) {
+	if (options.verbose > 2) {
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
 	}
 
