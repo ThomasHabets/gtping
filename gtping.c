@@ -522,10 +522,9 @@ handleRecvErr(int fd)
 				break;
 			default:
 				fprintf(stderr,
-					"%s: Got cmsg type: %d %d %d",
+					"%s: Got cmsg type: %d",
 					argv0,
-					cmsg->cmsg_type, REAL_IPV6_HOPLIMIT,
-					IP_TTL);
+					cmsg->cmsg_type);
 				if (0 < returnttl) {
 					fprintf(stderr, ". Return TTL: %d",
 						returnttl);
