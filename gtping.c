@@ -591,9 +591,6 @@ mainloop(int fd)
 
 		fds.fd = fd;
 		fds.events = POLLIN;
-		if (ERR_INSPECTION) {
-			fds.events |= POLLERR;
-		}
 		fds.revents = 0;
 		
 		timewait = (lastping + options.interval) - gettimeofday_dbl();
