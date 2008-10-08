@@ -48,8 +48,13 @@
 #define __u8 unsigned char
 #define __u32 unsigned int
 #include <linux/errqueue.h>
+#undef __u8
+#undef __u32
 #undef ERR_INSPECTION
 #define ERR_INSPECTION 1
+/* from /usr/include/linux/in6.h */
+#define IPV6_RECVHOPLIMIT      51
+#define IPV6_HOPLIMIT           52
 #endif
 
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
@@ -244,6 +249,16 @@ setupSocket()
 			fprintf(stderr,
 				"%s: setsockopt(%d, SOL_IPV6, "
 				"IPV6_RECVERR, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
+		if (setsockopt(fd,
+			       SOL_IPV6,
+			       IPV6_RECVHOPLIMIT,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IPV6, "
+				"IP_RECVHOPLIMIT, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
 	}
@@ -450,7 +465,8 @@ handleRecvErr(int fd)
 	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
 		if ((cmsg->cmsg_level == SOL_IP
 		     || cmsg->cmsg_level == SOL_IPV6)
-		    && (cmsg->cmsg_type == IP_TTL)) {
+		    && (cmsg->cmsg_type == IP_TTL
+			|| cmsg->cmsg_type == IPV6_HOPLIMIT)) {
 			returnttl = *(int*)CMSG_DATA(cmsg);
 		}
 	}
@@ -459,14 +475,18 @@ handleRecvErr(int fd)
 	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
                 if (cmsg->cmsg_level == SOL_IP
 		    || cmsg->cmsg_level == SOL_IPV6) {
-                        if (cmsg->cmsg_type == IP_RECVERR
-			    || cmsg->cmsg_type == IPV6_RECVERR) {
+			switch(cmsg->cmsg_type) {
+			case IP_RECVERR:
+			case IPV6_RECVERR:
 				handleRecvErrSEE((struct sock_extended_err*)
 						 CMSG_DATA(cmsg),
 						 returnttl);
-			} else if (cmsg->cmsg_type == IP_TTL) {
+				break;
+			case IP_TTL:
+			case IPV6_HOPLIMIT:
 				/* ignore */
-			} else {
+				break;
+			default:
 				fprintf(stderr,
 					"%s: Got cmsg type: %d",
 					argv0,
