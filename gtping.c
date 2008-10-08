@@ -109,6 +109,7 @@ static struct Options options = {
 	target: 0,
 	targetip: 0,
 	ttl: -1,
+	teid: 0,
 };
 
 static double gettimeofday_dbl();
@@ -488,9 +489,14 @@ recvEchoReply(int fd)
 			return err;
 		}
 	}
-	if (gtp.teid != htonl(options.teid)) {
-		return 1;
+
+	/* replies use teid 0 */
+	if (0) {
+		if (gtp.teid != htonl(options.teid)) {
+			return 1;
+		}
 	}
+
 	if (gtp.msg != 0x02) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
@@ -665,7 +671,7 @@ usage(int err)
 	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
 	       "\t-p <port>   GTP-C UDP port to ping (default: %s)\n"
-	       "\t-t          Transaction ID (default: arbitrary)\n"
+	       "\t-t          Transaction ID (default: 0)\n"
 	       "\t-T          IP TTL (default: system default)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
 	       "\t-w <time>   Time between pings (default: %.1f)\n",
@@ -685,13 +691,19 @@ main(int argc, char **argv)
 	       version);
 
 	argv0 = argv[0];
-	srand(getpid() ^ time(0));
 
-	/* don't know what RAND_MAX is, so just assume at least 8bits */
-	options.teid = ((((rand() & 0xff) * 256
-			  + (rand() & 0xff)) * 256
-			 + (rand() & 0xff)) * 256
-			+ (rand() & 0xff));
+	/* arbitrary teid */
+	if (0) {
+		srand(getpid() ^ time(0));
+
+		/* don't know what RAND_MAX is,
+		   so just assume at least 8bits */
+		options.teid = ((((rand() & 0xff) * 256
+				  + (rand() & 0xff)) * 256
+				 + (rand() & 0xff)) * 256
+				+ (rand() & 0xff));
+	}
+
 	{
 		int c;
 		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vw:"))) {
@@ -746,3 +758,9 @@ main(int argc, char **argv)
 
 	return mainloop(fd);
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * End:
+ */
