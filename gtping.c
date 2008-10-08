@@ -62,11 +62,11 @@ struct GtpEcho {
 };
 #pragma pack()
 
-#define DEFAULT_PORT 2123
+#define DEFAULT_PORT "2123"
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
 struct Options {
-	int port;
+	const char *port;
 	int verbose;
 	double interval;
 	unsigned int count;
@@ -123,16 +123,12 @@ setupSocket()
 	int err = 0;
 	struct addrinfo *addrs = 0;
 	struct addrinfo hints;
-	char port[32];
+	int on;
 
 	if (options.verbose > 1) {
 		fprintf(stderr, "%s: setupSocket(%s)\n",
 			argv0, options.target);
 	}
-	options.targetip = 0;
-	
-	snprintf(port, sizeof(port), "%u", options.port);
-
 	if (!(options.targetip = malloc(NI_MAXHOST))) {
 		err = errno;
 		fprintf(stderr, "%s: malloc(NI_MAXHOST): %s\n",
@@ -142,11 +138,11 @@ setupSocket()
 
 	/* resolve to sockaddr */
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
+	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_DGRAM;
 	if (0 > (err = getaddrinfo(options.target,
-				   port,
+				   options.port,
 				   &hints,
 				   &addrs))) {
 		int gai_err;
@@ -481,7 +477,7 @@ usage(int err)
 	       "\t-c <count>  Stop after sending count pings. "
 	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
-	       "\t-p <port>   GTP-C UDP port to ping (default: %d)\n"
+	       "\t-p <port>   GTP-C UDP port to ping (default: %s)\n"
 	       "\t-t          Transaction ID (default: arbitrary)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
 	       "\t-w <time>   Time between pings (default: %.1f)\n",
@@ -519,7 +515,7 @@ main(int argc, char **argv)
 				usage(0);
 				break;
 			case 'p':
-				options.port = strtoul(optarg, 0, 0);
+				options.port = optarg;
 				break;
 			case 't':
 				options.teid = strtoul(optarg, 0, 0);
