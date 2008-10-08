@@ -492,7 +492,7 @@ handleRecvErr(int fd)
 					argv0,
 					cmsg->cmsg_type);
 				if (0 < returnttl) {
-					fprintf(stderr, "return TTL: %d",
+					fprintf(stderr, ". return TTL: %d",
 						returnttl);
 				}
 				printf("\n");
