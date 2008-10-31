@@ -68,13 +68,13 @@
 
 #pragma pack(1)
 struct GtpEcho {
-	char flags;
-	char msg;
-	uint16_t len;	
-	uint32_t teid;
-	uint16_t seq;
-	char npdu;
-	char next;
+        char flags;
+        char msg;
+        uint16_t len;   
+        uint32_t teid;
+        uint16_t seq;
+        char npdu;
+        char next;
 };
 #pragma pack()
 
@@ -82,15 +82,15 @@ struct GtpEcho {
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
 struct Options {
-	const char *port;
-	int verbose;
-	double interval;
-	unsigned int count;
-	uint32_t teid;
-	const char *target;  /* what is on the cmdline */
-	char *targetip;      /* IPv* address string */
-	int ttl;
-	int tos;
+        const char *port;
+        int verbose;
+        double interval;
+        unsigned int count;
+        uint32_t teid;
+        const char *target;  /* what is on the cmdline */
+        char *targetip;      /* IPv* address string */
+        int ttl;
+        int tos;
 };
 
 static const double version = 0.12f;
@@ -108,15 +108,15 @@ static double totalMax = -1;
 /* from cmdline */
 static const char *argv0 = 0;
 static struct Options options = {
-	port: DEFAULT_PORT,
-	verbose: DEFAULT_VERBOSE,
-	interval: DEFAULT_INTERVAL,
-	count: 0,
-	target: 0,
-	targetip: 0,
-	ttl: -1,
-	tos: -1,
-	teid: 0,
+        port: DEFAULT_PORT,
+        verbose: DEFAULT_VERBOSE,
+        interval: DEFAULT_INTERVAL,
+        count: 0,
+        target: 0,
+        targetip: 0,
+        ttl: -1,
+        tos: -1,
+        teid: 0,
 };
 
 static double gettimeofday_dbl();
@@ -849,5 +849,6 @@ main(int argc, char **argv)
 /* ---- Emacs Variables ----
  * Local Variables:
  * c-basic-offset: 8
+ * indent-tabs-mode: nil
  * End:
  */
