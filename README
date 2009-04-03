@@ -11,5 +11,27 @@ Like ping(8), but uses GTP ping requests to ping GGSNs and anything
 else that will answer them.
 
 
+License
+-------
+GPL, see the LICENCE file.
+
+
+Compiling
+---------
+Run "make". This produces a "gtping" binary.
+
+
+Example use
+-----------
+$ ./gtping -c 1 1.2.3.4
+GTPing 0.13, By Thomas Habets <thomas@habets.pp.se>
+GTPING 1.2.3.4 (1.2.3.4) 12 bytes of data.
+12 bytes from 1.2.3.4: seq=0 time=0.51 ms
+
+--- 1.2.3.4 GTP ping statistics ---
+1 packets transmitted, 1 received, 0 dups, 0% packet loss, time 1000ms
+rtt min/avg/max/mdev = 0.512/0.512/0.512/0.000 ms
+
+
 -----------------------------------------------------------------------------
 Send questions/suggestions/patches/rants/money/routers to thomas@habets.pp.se
