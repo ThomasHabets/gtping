@@ -2,14 +2,14 @@
  *
  * GTP Ping
  *
- * By Thomas Habets <thomas@habets.pp.se> 2008
+ * By Thomas Habets <thomas@habets.pp.se> 2008-2009
  *
  * Send GTP Ping and time the reply.
  *
  *
  */
 /*
- *  Copyright (C) 2008 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2008-2009 Thomas Habets <thomas@habets.pp.se>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public
@@ -60,8 +60,10 @@
 #define REAL_IPV6_HOPLIMIT IPV6_HOPLIMIT
 #endif
 
-/* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
-#define SENDTIMES_SIZE 1000
+/* pings older than TRACKPINGS_SIZE * the_wait_time are ignored.
+ * They are old and are considered lost.
+ */
+#define TRACKPINGS_SIZE 1000
 
 /* For those OSs that don't read RFC3493, even though their manpage
  * points to it. */
@@ -101,8 +103,8 @@ static const double version = 0.12f;
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
 static double startTime;
-static double sendTimes[SENDTIMES_SIZE];
-static int gotIt[SENDTIMES_SIZE];
+static double sendTimes[TRACKPINGS_SIZE]; /* RTT data*/
+static int gotIt[TRACKPINGS_SIZE];        /* duplicate-check scratchpad  */
 static unsigned int totalTimeCount = 0;
 static double totalTime = 0;
 static double totalTimeSquared = 0;
@@ -376,8 +378,8 @@ sendEcho(int fd, int seq)
 	gtp.npdu = 0x00;
 	gtp.next = 0x00;
 
-	sendTimes[seq % SENDTIMES_SIZE] = gettimeofday_dbl();
-        gotIt[seq % SENDTIMES_SIZE] = 0;
+        sendTimes[seq % TRACKPINGS_SIZE] = gettimeofday_dbl();
+        gotIt[seq % TRACKPINGS_SIZE] = 0;
 
 	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
 					   sizeof(struct GtpEcho), 0)) {
@@ -604,11 +606,11 @@ recvEchoReply(int fd)
 		return 0;
 	}
 
-	if (curSeq - htons(gtp.seq) >= SENDTIMES_SIZE) {
+        if (curSeq - htons(gtp.seq) >= TRACKPINGS_SIZE) {
 		strcpy(lag, "Inf");
 	} else {
-                int pos = htons(gtp.seq)%SENDTIMES_SIZE;
-		double lagf = (now-sendTimes[pos]);
+                int pos = htons(gtp.seq) % TRACKPINGS_SIZE;
+                double lagf = now - sendTimes[pos];
                 if (gotIt[pos]) {
                         isDup = 1;
                 }
