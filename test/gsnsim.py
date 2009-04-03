@@ -1,5 +1,8 @@
 #!/usr/bin/python
-
+# gtping/gsnsim.py
+#
+# Simulate a GSN node in that it responds to GTP pings in different ways.
+#
 import socket, struct, random
 
 def getUnpack(fd):
