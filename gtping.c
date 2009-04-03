@@ -61,7 +61,7 @@
 #endif
 
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
-#define SENDTIMES_SIZE 100
+#define SENDTIMES_SIZE 1000
 
 /* For those OSs that don't read RFC3493, even though their manpage
  * points to it. */
