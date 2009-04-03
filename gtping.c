@@ -102,11 +102,14 @@ static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
 static double startTime;
 static double sendTimes[SENDTIMES_SIZE];
+static int gotIt[SENDTIMES_SIZE];
 static unsigned int totalTimeCount = 0;
 static double totalTime = 0;
 static double totalTimeSquared = 0;
 static double totalMin = -1;
 static double totalMax = -1;
+static unsigned int dups = 0;
+
 
 /* from cmdline */
 static const char *argv0 = 0;
@@ -374,6 +377,7 @@ sendEcho(int fd, int seq)
 	gtp.next = 0x00;
 
 	sendTimes[seq % SENDTIMES_SIZE] = gettimeofday_dbl();
+        gotIt[seq % SENDTIMES_SIZE] = 0;
 
 	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
 					   sizeof(struct GtpEcho), 0)) {
@@ -561,6 +565,7 @@ recvEchoReply(int fd)
 	int n;
 	double now;
 	char lag[128];
+        int isDup = 0;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
@@ -602,24 +607,35 @@ recvEchoReply(int fd)
 	if (curSeq - htons(gtp.seq) >= SENDTIMES_SIZE) {
 		strcpy(lag, "Inf");
 	} else {
-		double lagf = (now-sendTimes[htons(gtp.seq)%SENDTIMES_SIZE]);
+                int pos = htons(gtp.seq)%SENDTIMES_SIZE;
+		double lagf = (now-sendTimes[pos]);
+                if (gotIt[pos]) {
+                        isDup = 1;
+                }
+                gotIt[pos]++;
 		snprintf(lag, sizeof(lag), "%.2f ms", 1000 * lagf);
-		totalTime += lagf;
-		totalTimeSquared += lagf * lagf;
-		totalTimeCount++;
-		if ((0 > totalMin) || (lagf < totalMin)) {
-			totalMin = lagf;
-		}
-		if ((0 > totalMax) || (lagf > totalMax)) {
-			totalMax = lagf;
-		}
+                if (!isDup) {
+                        totalTime += lagf;
+                        totalTimeSquared += lagf * lagf;
+                        totalTimeCount++;
+                        if ((0 > totalMin) || (lagf < totalMin)) {
+                                totalMin = lagf;
+                        }
+                        if ((0 > totalMax) || (lagf > totalMax)) {
+                                totalMax = lagf;
+                        }
+                }
 	}
-	printf("%u bytes from %s: seq=%u time=%s\n",
+	printf("%u bytes from %s: seq=%u time=%s%s\n",
 	       n,
 	       options.targetip,
 	       htons(gtp.seq),
-	       lag);
-	return 0;
+	       lag,
+               isDup ? " (DUP)" : "");
+        if (isDup) {
+                dups++;
+        }
+	return isDup;
 }
 
 /**
@@ -732,10 +748,10 @@ mainloop(int fd)
 			
 	}
 	printf("\n--- %s GTP ping statistics ---\n"
-	       "%u packets transmitted, %u received, "
+	       "%u packets transmitted, %u received, %u dups, "
 	       "%d%% packet loss, time %dms\n",
 	       options.target,
-	       sent, recvd,
+	       sent, recvd, dups,
 	       (int)((100.0*(sent-recvd))/sent),
 	       (int)(1000*(gettimeofday_dbl()-startTime)));
 	if (totalTimeCount) {
