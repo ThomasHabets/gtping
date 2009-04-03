@@ -53,8 +53,11 @@
 #undef ERR_INSPECTION
 #define ERR_INSPECTION 1
 /* from /usr/include/linux/in6.h */
-#define REAL_IPV6_RECVHOPLIMIT      51
+#define REAL_IPV6_RECVHOPLIMIT       51
 #define REAL_IPV6_HOPLIMIT           52
+#else
+#define REAL_IPV6_RECVHOPLIMIT IPV6_RECVHOPLIMIT
+#define REAL_IPV6_HOPLIMIT IPV6_HOPLIMIT
 #endif
 
 /* pings older than SENDTIMES_SIZE * the_wait_time are ignored */
@@ -516,8 +519,10 @@ handleRecvErr(int fd)
 						 returnttl);
 				break;
 			case IP_TTL:
-			case IPV6_HOPLIMIT:
+#if IPV6_HOPLIMIT != REAL_IPV6_HOPLIMIT
 			case REAL_IPV6_HOPLIMIT:
+#endif
+			case IPV6_HOPLIMIT:
 				/* ignore */
 				break;
 			default:
