@@ -794,8 +794,8 @@ usage(int err)
 	       "(default: 0=Infinite)\n"
 	       "\t-h          Show this help text\n"
 	       "\t-p <port>   GTP-C UDP port to ping (default: %s)\n"
-	       "\t-t          Transaction ID (default: 0)\n"
-	       "\t-T          IP TTL (default: system default)\n"
+               "\t-t <teid>   Transaction ID (default: 0)\n"
+               "\t-T <ttl>    IP TTL (default: system default)\n"
 	       "\t-v          Increase verbosity level (default: %d)\n"
 	       "\t-w <time>   Time between pings (default: %.1f)\n",
 	       argv0, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
