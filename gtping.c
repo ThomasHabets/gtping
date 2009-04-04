@@ -52,10 +52,13 @@
 #undef __u32
 #undef ERR_INSPECTION
 #define ERR_INSPECTION 1
+
 /* from /usr/include/linux/in6.h */
 #define REAL_IPV6_RECVHOPLIMIT       51
 #define REAL_IPV6_HOPLIMIT           52
+
 #else
+/* non-Linux */
 #define REAL_IPV6_RECVHOPLIMIT IPV6_RECVHOPLIMIT
 #define REAL_IPV6_HOPLIMIT IPV6_HOPLIMIT
 #endif
@@ -557,7 +560,9 @@ handleRecvErr(int fd)
 #endif
 
 /**
- * return 0 on success/got reply, <0 on fail, >1 on success, no packet
+ * return 0 on success/got reply,
+ *        <0 on fail
+ *        >1 on success, but no packet (EINTR or dup packet)
  */
 static int
 recvEchoReply(int fd)
@@ -579,9 +584,17 @@ recvEchoReply(int fd)
 
 	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
 		switch(errno) {
-		case ECONNREFUSED:
-			printf("FIXME: test this code path!\n");
+                case ECONNREFUSED: {
+                        static int haswarned = 0;
+                        if (!haswarned) {
+                                fprintf(stderr,
+                                        "%s: recv() returned ECONNREFUSED. "
+                                        "That's strange.\n",
+                                        argv0);
+                                haswarned = 1;
+                        }
 			handleRecvErr(fd);
+                }
 		case EINTR:
 			return 1;
 		default:
@@ -802,7 +815,7 @@ main(int argc, char **argv)
 
 	argv0 = argv[0];
 
-	/* arbitrary teid */
+        /* arbitrary teid. Should be 0, so randomize is off */
 	if (0) {
 		srand(getpid() ^ time(0));
 
@@ -814,6 +827,7 @@ main(int argc, char **argv)
 				+ (rand() & 0xff));
 	}
 
+        /* parse options */
 	{
 		int c;
 		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vw:"))) {
