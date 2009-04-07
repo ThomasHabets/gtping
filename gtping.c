@@ -114,7 +114,12 @@ static double totalTimeSquared = 0;
 static double totalMin = -1;
 static double totalMax = -1;
 static unsigned int dups = 0;
-
+static unsigned int reorder = 0;
+static unsigned int highestSeq = 0;
+#if ERR_INSPECTION
+static unsigned int icmperror = 0;
+#endif
+static unsigned int connectionRefused = 0;
 
 /* from cmdline */
 static const char *argv0 = 0;
@@ -387,11 +392,13 @@ sendEcho(int fd, int seq)
 	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
 					   sizeof(struct GtpEcho), 0)) {
 		err = errno;
-		fprintf(stderr, "%s: send(%d, ...): %s\n",
-			argv0, fd, strerror(errno));
 		if (err == ECONNREFUSED) {
+                        printf("Connection refused\n");
+                        connectionRefused++;
 			return err;
 		}
+                fprintf(stderr, "%s: send(%d, ...): %s\n",
+                        argv0, fd, strerror(errno));
 		return -err;
 	}
 	return 0;
@@ -464,6 +471,7 @@ handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
 		printf("%s", strerror(see->ee_errno));
 		break;
 	}
+        icmperror++;
 	if (options.verbose && (0 < returnttl)) {
 		printf(". return TTL: %d.", returnttl);
 	}
@@ -573,6 +581,7 @@ recvEchoReply(int fd)
 	double now;
 	char lag[128];
         int isDup = 0;
+        int isReorder = 0;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
@@ -641,12 +650,24 @@ recvEchoReply(int fd)
                         }
                 }
 	}
-	printf("%u bytes from %s: seq=%u time=%s%s\n",
+
+        /* detect packet reordering */
+        if (!isDup) {
+                if (highestSeq > gtp.seq) {
+                        reorder++;
+                        isReorder = 1;
+                } else {
+                        highestSeq = gtp.seq;
+                }
+        }
+
+        printf("%u bytes from %s: seq=%u time=%s%s%s\n",
 	       n,
 	       options.targetip,
 	       htons(gtp.seq),
 	       lag,
-               isDup ? " (DUP)" : "");
+               isDup ? " (DUP)" : "",
+               isReorder ? " (out of order)" : "");
         if (isDup) {
                 dups++;
         }
@@ -763,12 +784,23 @@ mainloop(int fd)
 			
 	}
 	printf("\n--- %s GTP ping statistics ---\n"
-	       "%u packets transmitted, %u received, %u dups, "
-	       "%d%% packet loss, time %dms\n",
+               "%u packets transmitted, %u received, "
+               "%d%% packet loss, "
+               "time %dms\n"
+               "%u out of order, %u dups, "
+#if ERR_INSPECTION
+               "%u ICMP error, "
+#endif
+               "%u connection refused\n",
 	       options.target,
-	       sent, recvd, dups,
+               sent, recvd,
 	       (int)((100.0*(sent-recvd))/sent),
-	       (int)(1000*(gettimeofday_dbl()-startTime)));
+               (int)(1000*(gettimeofday_dbl()-startTime)),
+               reorder, dups,
+#if ERR_INSPECTION
+               icmperror,
+#endif
+               connectionRefused);
 	if (totalTimeCount) {
 		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms",
 		       1000*totalMin,
