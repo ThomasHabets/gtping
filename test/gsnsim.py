@@ -3,7 +3,7 @@
 #
 # Simulate a GSN node in that it responds to GTP pings in different ways.
 #
-import socket, struct, random
+import socket, struct, random, time
 
 def getUnpack(fd):
     """getUnpack(fd)
@@ -75,7 +75,47 @@ def loopRandom(fd, minnum = 0, maxnum = 2):
                                   next),
                       src)
         
-        
+from threading import Thread
+
+packetscheduler = []
+class PacketScheduler(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        pass
+    def run(self):
+        while True:
+            while len(packetscheduler) == 0:
+                time.sleep(0.1)
+            packetscheduler.sort()
+            packetscheduler.reverse()
+            t,fd,dst,packet = packetscheduler.pop()
+            if t > time.time():
+                packetscheduler.append( (t, fd, dst,packet) )
+                continue
+            fd.sendto(packet, dst)
+            
+    
+def loopJitter(fd, mintime=0, maxtime=1):
+    ps = PacketScheduler()
+    ps.start()
+    while True:
+        src, (flags,msg,ln,teid,seq,npdu,next) = getUnpack(fd)        
+        if ord(msg) != 1:
+            continue
+        packetscheduler.append( (time.time()
+                                 + mintime
+                                 + random.random() * (maxtime-mintime),
+                                 fd, src,
+                               struct.pack('cchlhcc',
+                                           flags,
+                                           chr(2),
+                                           ln,
+                                           teid,
+                                           seq,
+                                           npdu,
+                                           next),
+                               )
+                              )
 
 def main():
     fd = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
@@ -83,7 +123,8 @@ def main():
     try:
         #loopNormal(fd)
         #loopDup(fd)
-        loopRandom(fd)
+        #loopRandom(fd)
+        loopJitter(fd, mintime=0, maxtime=5)
     except KeyboardInterrupt:
         return
 
