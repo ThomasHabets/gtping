@@ -29,7 +29,8 @@ GTPING 1.2.3.4 (1.2.3.4) 12 bytes of data.
 12 bytes from 1.2.3.4: seq=0 time=0.51 ms
 
 --- 1.2.3.4 GTP ping statistics ---
-1 packets transmitted, 1 received, 0 dups, 0% packet loss, time 1000ms
+1 packets transmitted, 1 received, 0% packet loss, time 1000ms
+0 out of order, 0 dups, 0 ICMP error, 0 connection refused
 rtt min/avg/max/mdev = 0.512/0.512/0.512/0.000 ms
 
 
