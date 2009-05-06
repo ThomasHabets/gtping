@@ -41,9 +41,20 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-/* In-depth error handling only implemented for linux so far */
 #define ERR_INSPECTION 0
 
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
+#ifndef SOL_IPV6
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
+
+
+/**
+ * In-depth error handling only implemented for linux so far
+ */
 #ifdef __linux__
 #define __u8 unsigned char
 #define __u32 unsigned int
@@ -373,8 +384,8 @@ sendEcho(int fd, int seq)
 	}
 
 	if (options.verbose > 1) {
-		fprintf(stderr,	"%s: Sending GTP ping with seq=%d\n",
-			argv0, curSeq);
+		fprintf(stderr,	"%s: Sending GTP ping with seq=%d size %d\n",
+			argv0, curSeq, sizeof(struct GtpEcho));
 	}
 
 	memset(&gtp, 0, sizeof(struct GtpEcho));
@@ -479,7 +490,7 @@ handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
 }
 
 static void
-handleRecvErr(int fd)
+handleRecvErr(int fd, const char *reason)
 {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -489,6 +500,9 @@ handleRecvErr(int fd)
 	struct iovec iov;
 	int n;
 	int returnttl = -1;
+
+        /* ignore reason, we know better */
+        reason = reason;
 
 	/* get error data */
 	iov.iov_base = buf;
@@ -560,17 +574,22 @@ handleRecvErr(int fd)
 
 #else
 static void
-handleRecvErr(int fd)
+handleRecvErr(int fd, const char *reason)
 {
-	fd = fd;
-	printf("Destination unreachable (closed, filtered or TTL exceeded)\n");
+        fd = fd;
+        if (reason) {
+                printf("%s\n", reason);
+        } else {
+                printf("Destination unreachable "
+                       "(closed, filtered or TTL exceeded)\n");
+        }
 }
 #endif
 
 /**
  * return 0 on success/got reply,
- *        <0 on fail
- *        >1 on success, but no packet (EINTR or dup packet)
+ *        <0 on fail. Errno returned.
+ *        >0 on success, but no packet (EINTR or dup packet)
  */
 static int
 recvEchoReply(int fd)
@@ -593,19 +612,15 @@ recvEchoReply(int fd)
 
 	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
 		switch(errno) {
-                case ECONNREFUSED: {
-                        static int haswarned = 0;
-                        if (!haswarned) {
-                                fprintf(stderr,
-                                        "%s: recv() returned ECONNREFUSED. "
-                                        "That's strange.\n",
-                                        argv0);
-                                haswarned = 1;
-                        }
-			handleRecvErr(fd);
-                }
+                case ECONNREFUSED:
+                        connectionRefused++;
+			handleRecvErr(fd, "Port closed");
+                        return 1;
 		case EINTR:
 			return 1;
+                case EHOSTUNREACH:
+			handleRecvErr(fd, "Host unreachable or TTL exceeded");
+                        return 1;
 		default:
 			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s\n",
@@ -747,7 +762,7 @@ mainloop(int fd)
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR && ERR_INSPECTION) {
-				handleRecvErr(fd);
+				handleRecvErr(fd, NULL);
 			}
 			if (fds.revents & POLLIN) {
 				n = recvEchoReply(fd);
