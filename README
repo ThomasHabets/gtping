@@ -10,6 +10,11 @@ Description
 Like ping(8), but uses GTP ping requests to ping GGSNs and anything
 else that will answer them.
 
+Tested and works on Linux, FreeBSD and Solaris. Should work on many more.
+
+The Linux network code exposes more info about why a packet is
+lost. Could be good to know.
+
 
 License
 -------
