@@ -20,6 +20,9 @@ Compiling
 ---------
 Run "make". This produces a "gtping" binary.
 
+On Solaris you currently have to edit the Makefile and uncomment a line
+there. It's documented so you'll find it. I'm working on automating this.
+
 
 Example use
 -----------
