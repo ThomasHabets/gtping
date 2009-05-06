@@ -41,9 +41,20 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-/* In-depth error handling only implemented for linux so far */
 #define ERR_INSPECTION 0
 
+#ifndef SOL_IP
+#define SOL_IP SOL_SOCKET
+#endif
+
+#ifndef SOL_IPV6
+#define SOL_IPV6 SOL_SOCKET
+#endif
+
+
+/**
+ * In-depth error handling only implemented for linux so far
+ */
 #ifdef __linux__
 #define __u8 unsigned char
 #define __u32 unsigned int
