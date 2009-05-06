@@ -12,8 +12,8 @@ def getUnpack(fd):
     """
     data, src = fd.recvfrom(1048576)
     src = src[0],src[1]
-    print "from %s port %d" % (src[0],src[1])
-    return src, struct.unpack('cchlhcc', data)
+    print "from %s port %d len %d" % (src[0], src[1], len(data))
+    return src, struct.unpack('cchihcc', data)
 
 def loopNormal(fd):
     """loopNormal(fd)
@@ -25,7 +25,7 @@ def loopNormal(fd):
         if ord(msg) != 1:
             continue
 
-        fd.sendto(struct.pack('cchlhcc',
+        fd.sendto(struct.pack('cchihcc',
                               flags,
                               chr(2),
                               ln,
@@ -121,11 +121,12 @@ def main():
     fd = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     fd.bind( ('', 2123) )
     try:
-        #loopNormal(fd)
+        loopNormal(fd)
         #loopDup(fd)
         #loopRandom(fd)
-        loopJitter(fd, mintime=0, maxtime=5)
+        #loopJitter(fd, mintime=0, maxtime=5)
     except KeyboardInterrupt:
+        fd.close()
         return
 
 if __name__ == '__main__':
