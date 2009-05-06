@@ -588,8 +588,8 @@ handleRecvErr(int fd, const char *reason)
 
 /**
  * return 0 on success/got reply,
- *        <0 on fail
- *        >1 on success, but no packet (EINTR or dup packet)
+ *        <0 on fail. Errno returned.
+ *        >0 on success, but no packet (EINTR or dup packet)
  */
 static int
 recvEchoReply(int fd)
@@ -615,8 +615,12 @@ recvEchoReply(int fd)
                 case ECONNREFUSED:
                         connectionRefused++;
 			handleRecvErr(fd, "Port closed");
+                        return 1;
 		case EINTR:
 			return 1;
+                case EHOSTUNREACH:
+			handleRecvErr(fd, "Host unreachable or TTL exceeded");
+                        return 1;
 		default:
 			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s\n",
