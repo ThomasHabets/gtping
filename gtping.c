@@ -384,8 +384,8 @@ sendEcho(int fd, int seq)
 	}
 
 	if (options.verbose > 1) {
-		fprintf(stderr,	"%s: Sending GTP ping with seq=%d\n",
-			argv0, curSeq);
+		fprintf(stderr,	"%s: Sending GTP ping with seq=%d size %d\n",
+			argv0, curSeq, sizeof(struct GtpEcho));
 	}
 
 	memset(&gtp, 0, sizeof(struct GtpEcho));
@@ -490,7 +490,7 @@ handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
 }
 
 static void
-handleRecvErr(int fd)
+handleRecvErr(int fd, const char *reason)
 {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -500,6 +500,9 @@ handleRecvErr(int fd)
 	struct iovec iov;
 	int n;
 	int returnttl = -1;
+
+        /* ignore reason, we know better */
+        reason = reason;
 
 	/* get error data */
 	iov.iov_base = buf;
@@ -571,10 +574,15 @@ handleRecvErr(int fd)
 
 #else
 static void
-handleRecvErr(int fd)
+handleRecvErr(int fd, const char *reason)
 {
-	fd = fd;
-	printf("Destination unreachable (closed, filtered or TTL exceeded)\n");
+        fd = fd;
+        if (reason) {
+                printf("%s\n", reason);
+        } else {
+                printf("Destination unreachable "
+                       "(closed, filtered or TTL exceeded)\n");
+        }
 }
 #endif
 
@@ -604,17 +612,9 @@ recvEchoReply(int fd)
 
 	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
 		switch(errno) {
-                case ECONNREFUSED: {
-                        static int haswarned = 0;
-                        if (!haswarned) {
-                                fprintf(stderr,
-                                        "%s: recv() returned ECONNREFUSED. "
-                                        "That's strange.\n",
-                                        argv0);
-                                haswarned = 1;
-                        }
-			handleRecvErr(fd);
-                }
+                case ECONNREFUSED:
+                        connectionRefused++;
+			handleRecvErr(fd, "Port closed");
 		case EINTR:
 			return 1;
 		default:
@@ -758,7 +758,7 @@ mainloop(int fd)
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR && ERR_INSPECTION) {
-				handleRecvErr(fd);
+				handleRecvErr(fd, NULL);
 			}
 			if (fds.revents & POLLIN) {
 				n = recvEchoReply(fd);
