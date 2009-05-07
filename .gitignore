@@ -1,3 +1,4 @@
 # gtping/.gitignore
 gtping
 *.o
+autom4te.cache
