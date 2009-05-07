@@ -1,0 +1,17 @@
+gtping/INSTALL
+
+ GTP Ping
+
+   By Thomas Habets <thomas@habets.pp.se>
+
+
+Installing
+==========
+
+./configure
+make
+make install
+
+
+-----------------------------------------------------------------------------
+Send questions/suggestions/patches/rants/money/routers to thomas@habets.pp.se
