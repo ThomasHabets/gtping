@@ -2,3 +2,4 @@
 gtping
 *.o
 autom4te.cache
+*~
