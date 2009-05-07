@@ -2,6 +2,7 @@
 # gtping/configure.ac
 #
 # aclocal && autoheader && automake -a -c && autoconf -i
+# or if working: autoreconf -i
 #
 
 AC_PREREQ(2.61)
