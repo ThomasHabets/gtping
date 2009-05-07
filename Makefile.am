@@ -6,6 +6,15 @@ AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = gtping
 gtping_SOURCES = gtping.c
 
+GIT=git
+GPG=gpg
+GZIP=gzip
+
+V=@VERSION@
+signed-dist: gtping
+	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | $(GZIP) -9 > gtping-$(V).tar.gz
+	$(GPG) -b -a gtping-$(V).tar.gz
+
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
 	rm -f Makefile.in configure autoscan*.log
