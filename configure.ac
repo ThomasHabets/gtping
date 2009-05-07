@@ -9,7 +9,7 @@ AC_PREREQ(2.61)
 AC_INIT([gtping], [0.12], [thomas@habets.pp.se])
 AM_INIT_AUTOMAKE([gtping], [0.12])
 AC_CONFIG_SRCDIR([gtping.c])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADER(config.h)
 
 # Checks for programs.
 AC_PROG_CC
