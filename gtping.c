@@ -25,6 +25,10 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -112,7 +116,7 @@ struct Options {
         int tos;
 };
 
-static const double version = 0.12f;
+static const char *version = PACKAGE_VERSION;
 
 static volatile int time_to_die = 0;
 static unsigned int curSeq = 0;
@@ -857,7 +861,7 @@ main(int argc, char **argv)
 {
 	int fd;
 
-	printf("GTPing %.2f, By Thomas Habets <thomas@habets.pp.se>\n",
+	printf("GTPing %s, By Thomas Habets <thomas@habets.pp.se>\n",
 	       version);
 
 	argv0 = argv[0];
