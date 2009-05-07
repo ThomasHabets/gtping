@@ -45,8 +45,6 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-#define ERR_INSPECTION 0
-
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
 #endif
@@ -60,22 +58,28 @@
  * In-depth error handling only implemented for linux so far
  */
 #ifdef __linux__
-#define __u8 unsigned char
-#define __u32 unsigned int
-#include <linux/errqueue.h>
-#undef __u8
-#undef __u32
-#undef ERR_INSPECTION
-#define ERR_INSPECTION 1
+# define __u8 unsigned char
+# define __u32 unsigned int
+# include <linux/errqueue.h>
+# undef __u8
+# undef __u32
+# define ERR_INSPECTION 1
+#else
+# define ERR_INSPECTION 0
+#endif
 
+/**
+ * Sometimes these constants are wrong in the headers, so we check both the
+ * ones in the header files and the ones I found are correct.
+ */
+#ifdef __linux__
 /* from /usr/include/linux/in6.h */
-#define REAL_IPV6_RECVHOPLIMIT       51
-#define REAL_IPV6_HOPLIMIT           52
-
+# define REAL_IPV6_RECVHOPLIMIT       51
+# define REAL_IPV6_HOPLIMIT           52
 #else
 /* non-Linux */
-#define REAL_IPV6_RECVHOPLIMIT IPV6_RECVHOPLIMIT
-#define REAL_IPV6_HOPLIMIT IPV6_HOPLIMIT
+# define REAL_IPV6_RECVHOPLIMIT IPV6_RECVHOPLIMIT
+# define REAL_IPV6_HOPLIMIT IPV6_HOPLIMIT
 #endif
 
 /* pings older than TRACKPINGS_SIZE * the_wait_time are ignored.
@@ -86,9 +90,10 @@
 /* For those OSs that don't read RFC3493, even though their manpage
  * points to it. */
 #ifndef AI_ADDRCONFIG
-#define AI_ADDRCONFIG 0
+# define AI_ADDRCONFIG 0
 #endif
 
+/* GTP packet as used with GTP Echo */
 #pragma pack(1)
 struct GtpEcho {
         char flags;
@@ -101,6 +106,9 @@ struct GtpEcho {
 };
 #pragma pack()
 
+/**
+ * options
+ */
 #define DEFAULT_PORT "2123"
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
