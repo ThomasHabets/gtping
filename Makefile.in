@@ -36,7 +36,8 @@ bin_PROGRAMS = gtping$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure COPYING depcomp install-sh missing
+	$(top_srcdir)/configure COPYING INSTALL depcomp install-sh \
+	missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -162,6 +163,10 @@ top_srcdir = @top_srcdir@
 # Don't complain about "missing" standard GNU files
 AUTOMAKE_OPTIONS = foreign
 gtping_SOURCES = gtping.c
+GIT = git
+GPG = gpg
+GZIP = gzip
+V = @VERSION@
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -552,6 +557,9 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-binPROGRAMS
 
+signed-dist: gtping
+	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | $(GZIP) -9 > gtping-$(V).tar.gz
+	$(GPG) -b -a gtping-$(V).tar.gz
 
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
