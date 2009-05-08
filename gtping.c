@@ -844,21 +844,54 @@ mainloop(int fd)
 /**
  *
  */
+static char*
+argv0lenSpaces()
+{
+        static char buf[20];
+        size_t n;
+
+        memset(buf, ' ', sizeof(buf));
+        buf[sizeof(buf)-1] = 0;
+
+        n = strlen(argv0);
+
+        if (n < sizeof(buf)) {
+                buf[n] = 0;
+        } else {
+                buf[strlen("gtping")] = 0;
+        }
+        return buf;
+}
+
+
+/**
+ *
+ */
 static void
 usage(int err)
 {
-	printf("Usage: %s [ -hv ] [ -c <count> ] [ -p <port> ] "
-	       "[ -w <time> ] [ -T <ttl> ] <target>\n"
-	       "\t-c <count>  Stop after sending count pings. "
-	       "(default: 0=Infinite)\n"
-	       "\t-h          Show this help text\n"
-	       "\t-p <port>   GTP-C UDP port to ping (default: %s)\n"
-               "\t-t <teid>   Transaction ID (default: 0)\n"
-               "\t-T <ttl>    IP TTL (default: system default)\n"
-	       "\t-v          Increase verbosity level (default: %d)\n"
-	       "\t-w <time>   Time between pings (default: %.1f)\n",
-	       argv0, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
-	exit(err);
+        printf("Usage: %s "
+               "[ -hvV ] "
+               "[ -c <count> ] "
+               "[ -p <port> ] "
+               "[ -t <teid> ] "
+               "\n       %s "
+               "[ -T <ttl> ] "
+               "[ -w <time> ] "
+               "<target>\n"
+               "\n"
+               "\t-c <count>       Stop after sending count pings. "
+               "(default: 0=Infinite)\n"
+               "\t-h, --help       Show this help text\n"
+               "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
+              "\t-t <teid>        Transaction ID (default: 0)\n"
+               "\t-T <ttl>         IP TTL (default: system default)\n"
+               "\t-v               Increase verbosity level (default: %d)\n"
+               "\t-V, --version    Show version info and exit\n"
+               "\t-w <time>        Time between pings (default: %.1f)\n",
+               argv0, argv0lenSpaces(),
+               DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
+        exit(err);
 }
 
 /**
@@ -889,7 +922,7 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vVw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
@@ -909,6 +942,8 @@ main(int argc, char **argv)
 			case 'v':
 				options.verbose++;
 				break;
+                        case 'V':
+                                exit(0); /* have already shown version info */
 			case 'w':
 				options.interval = atof(optarg);
 				break;
