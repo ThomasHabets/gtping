@@ -615,7 +615,7 @@ signed-dist:
 
 doc: gtping.8
 
-gtping.8: gtping.yodl
+gtping.8:
 	yodl2man -o gtping.8 gtping.yodl
 
 mrproper: maintainer-clean
