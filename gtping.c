@@ -897,6 +897,22 @@ usage(int err)
 /**
  *
  */
+static void
+printVersion()
+{
+        printf("Copyright (C) 2009 Free Software Foundation, Inc.\n"
+               "License GPLv2: GNU GPL version 2 or later "
+               "<http://gnu.org/licenses/gpl-2.0.html>\n"
+               "This is free software: you are free to change and "
+               "redistribute it.\n"
+               "There is NO WARRANTY, to the extent permitted by law.\n");
+        exit(0);
+}
+
+
+/**
+ *
+ */
 int
 main(int argc, char **argv)
 {
@@ -906,6 +922,17 @@ main(int argc, char **argv)
 	       version);
 
 	argv0 = argv[0];
+
+        {
+                int c;
+                for (c = 1; c < argc; c++) {
+                        if (!strcmp(argv[c], "--help")) {
+                                usage(0);
+                        } if (!strcmp(argv[c], "--version")) {
+                                printVersion();
+                        }
+                }
+        }
 
         /* arbitrary teid. Should be 0, so randomize is off */
 	if (0) {
@@ -943,7 +970,7 @@ main(int argc, char **argv)
 				options.verbose++;
 				break;
                         case 'V':
-                                exit(0); /* have already shown version info */
+                                printVersion();
 			case 'w':
 				options.interval = atof(optarg);
 				break;
