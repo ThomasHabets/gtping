@@ -888,7 +888,11 @@ usage(int err)
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
                "\t-V, --version    Show version info and exit\n"
-               "\t-w <time>        Time between pings (default: %.1f)\n",
+               "\t-w <time>        Time between pings (default: %.1f)\n"
+               "\n"
+               "Report bugs to: thomas@habets.pp.se\n"
+               "gtping home page: "
+               "<http://www.habets.pp.se/synscan/programs.php?prog=gtping>\n",
                argv0, argv0lenSpaces(),
                DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
         exit(err);
