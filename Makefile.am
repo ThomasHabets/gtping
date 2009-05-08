@@ -11,9 +11,14 @@ GPG=gpg
 GZIP=gzip
 
 V=@VERSION@
-signed-dist: gtping
+signed-dist:
 	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | $(GZIP) -9 > gtping-$(V).tar.gz
 	$(GPG) -b -a gtping-$(V).tar.gz
+
+doc: gtping.8
+
+gtping.8: gtping.yodl
+	yodl2man -o gtping.8 gtping.yodl
 
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
