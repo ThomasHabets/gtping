@@ -29,6 +29,8 @@ startdit()
 enddit()
 
 manpagesection(Example)
+mancommand(.nf)
+mancommand(.sp)
     $ ./gtping -c 1 1.2.3.4
     GTPing 0.13, By Thomas Habets <thomas@habets.pp.se>
     GTPING 1.2.3.4 (1.2.3.4) 12 bytes of data.
@@ -38,6 +40,8 @@ manpagesection(Example)
     1 packets transmitted, 1 received, 0% packet loss, time 1000ms
     0 out of order, 0 dups, 0 ICMP error, 0 connection refused
     rtt min/avg/max/mdev = 0.512/0.512/0.512/0.000 ms
+mancommand(.fi)
+mancommand(.in)
 
 manpagebugs()
     No known bugs.
