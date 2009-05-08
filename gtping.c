@@ -904,7 +904,7 @@ usage(int err)
 static void
 printVersion()
 {
-        printf("Copyright (C) 2009 Free Software Foundation, Inc.\n"
+        printf("Copyright (C) 2008-2009 Thomas Habets\n"
                "License GPLv2: GNU GPL version 2 or later "
                "<http://gnu.org/licenses/gpl-2.0.html>\n"
                "This is free software: you are free to change and "
@@ -922,8 +922,7 @@ main(int argc, char **argv)
 {
 	int fd;
 
-	printf("GTPing %s, By Thomas Habets <thomas@habets.pp.se>\n",
-	       version);
+	printf("GTPing %s\n", version);
 
 	argv0 = argv[0];
 
