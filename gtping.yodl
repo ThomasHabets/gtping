@@ -29,7 +29,7 @@ startdit()
     dit(-V, --version) Show version and exit.
     dit(-w em(time)) Don't exit before waiting for the last ping for this long.
     Default -w is auto-detect, use 2*average RTT, and while no replies have been
-    seen, wait for 2 seconds.
+    seen, wait for 10 seconds.
 
 enddit()
 

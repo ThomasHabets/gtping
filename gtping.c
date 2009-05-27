@@ -112,7 +112,7 @@ struct GtpEcho {
 #define DEFAULT_PORT "2123"
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
-#define DEFAULT_WAIT 2.0
+#define DEFAULT_WAIT 10.0
 struct Options {
         const char *port;
         int verbose;
