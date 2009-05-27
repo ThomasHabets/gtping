@@ -115,6 +115,7 @@ struct GtpEcho {
 struct Options {
         const char *port;
         int verbose;
+        int flood;
         double interval;
         unsigned int count;
         uint32_t teid;
@@ -149,13 +150,19 @@ static const char *argv0 = 0;
 static struct Options options = {
         port: DEFAULT_PORT,
         verbose: DEFAULT_VERBOSE,
-        interval: DEFAULT_INTERVAL,
-        count: 0,
-        target: 0,
-        targetip: 0,
-        ttl: -1,
-        tos: -1,
-        teid: 0,
+        
+        flood: 0,
+
+        /* if still <0, set to DEFAULT_INTERVAL.
+         * set this way to make -f work with -w  */
+        interval: -1, 
+
+        count: 0,    /* -c */
+        target: 0,   /* arg */
+        targetip: 0, /* resolved arg */
+        ttl: -1,     /* -T */
+        tos: -1,     /* -Q (not implemented yet) */
+        teid: 0,     /* -t */
 };
 
 static double gettimeofday_dbl();
@@ -325,7 +332,7 @@ setupSocket()
 				       sizeof(options.tos))) {
 				fprintf(stderr,
 					"%s: setsockopt(%d, SOL_IP, IP_TOS, "
-					"%d): %s", argv0, fd, options.ttl,
+					"%d): %s", argv0, fd, options.tos,
 					strerror(errno));
 			}
 		}
@@ -344,6 +351,7 @@ setupSocket()
 					strerror(errno));
 			}
 		}
+                /* FIXME: set tos */
 	}
 
 	/* connect() */
@@ -688,13 +696,19 @@ recvEchoReply(int fd)
                 }
         }
 
-        printf("%u bytes from %s: seq=%u time=%s%s%s\n",
-	       n,
-	       options.targetip,
-	       htons(gtp.seq),
-	       lag,
-               isDup ? " (DUP)" : "",
-               isReorder ? " (out of order)" : "");
+        if (options.flood) {
+                if (!isDup) {
+                        printf("\b \b");
+                }
+        } else {
+                printf("%u bytes from %s: seq=%u time=%s%s%s\n",
+                       n,
+                       options.targetip,
+                       htons(gtp.seq),
+                       lag,
+                       isDup ? " (DUP)" : "",
+                       isReorder ? " (out of order)" : "");
+        }
         if (isDup) {
                 dups++;
         }
@@ -752,6 +766,7 @@ mainloop(int fd)
 		double timewait;
 		int n;
 
+                /* time to send yet? */
 		curping = gettimeofday_dbl();
 		if (curping > lastping + options.interval) {
 			if (options.count && (curSeq == options.count)) {
@@ -760,6 +775,10 @@ mainloop(int fd)
 			if (0 <= sendEcho(fd, curSeq++)) {
 				sent++;
 				lastping = curping;
+                                if (options.flood) {
+                                        printf(".");
+                                        fflush(stdout);
+                                }
 			}
 		}
 
@@ -952,11 +971,17 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:hp:t:T:vVw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:fhp:t:T:vVw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
 				break;
+                        case 'f':
+                                options.flood = 1;
+                                if (0 > options.interval) {
+                                        options.interval = 0;
+                                }
+                                break;
 			case 'h':
 				usage(0);
 				break;
@@ -983,6 +1008,9 @@ main(int argc, char **argv)
 			}
 		}
 	}
+        if (0 > options.interval) {
+                options.interval = DEFAULT_INTERVAL;
+        }
 	if (options.verbose) {
 		fprintf(stderr, "%s: transaction id: %.8x\n",
 			argv0, options.teid);
