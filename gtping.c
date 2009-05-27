@@ -786,10 +786,12 @@ mainloop(int fd)
 		fds.events = POLLIN;
 		fds.revents = 0;
 		
+                /* max waittime: until it's time to send the next one */
 		timewait = (lastping + options.interval) - gettimeofday_dbl();
 		if (timewait < 0) {
 			timewait = 0;
 		}
+                timewait *= 0.5; /* leave room for overhead */
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR && ERR_INSPECTION) {
