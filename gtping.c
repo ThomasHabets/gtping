@@ -112,11 +112,14 @@ struct GtpEcho {
 #define DEFAULT_PORT "2123"
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
+#define DEFAULT_WAIT 2.0
 struct Options {
         const char *port;
         int verbose;
         int flood;
         double interval;
+        double wait;
+        int autowait;
         unsigned int count;
         uint32_t teid;
         const char *target;  /* what is on the cmdline */
@@ -154,8 +157,11 @@ static struct Options options = {
         flood: 0,
 
         /* if still <0, set to DEFAULT_INTERVAL.
-         * set this way to make -f work with -w  */
+         * set this way to make -f work with -i  */
         interval: -1, 
+        
+        wait: -1,    /* -w */
+        autowait: 0,
 
         count: 0,    /* -c */
         target: 0,   /* arg */
@@ -655,7 +661,6 @@ recvEchoReply(int fd)
 			return 1;
 		}
 	}
-
 	if (gtp.msg != 0x02) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
@@ -682,6 +687,14 @@ recvEchoReply(int fd)
                         }
                         if ((0 > totalMax) || (lagf > totalMax)) {
                                 totalMax = lagf;
+                        }
+                }
+                if (options.autowait) {
+                        options.wait = 2 * (totalTime / totalTimeCount);
+                        if (options.verbose) {
+                                fprintf(stderr,
+                                        "%s: Adjusting waittime to %.6f\n",
+                                        argv0, options.wait);
                         }
                 }
 	}
@@ -749,6 +762,7 @@ mainloop(int fd)
 	unsigned recvd = 0;
 	double lastping = 0;
 	double curping;
+        double lastRecv = 0;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
@@ -770,9 +784,10 @@ mainloop(int fd)
 		curping = gettimeofday_dbl();
 		if (curping > lastping + options.interval) {
 			if (options.count && (curSeq == options.count)) {
-				break;
-			}
-			if (0 <= sendEcho(fd, curSeq++)) {
+				if (lastRecv + options.wait < curping) {
+                                        break;
+                                }
+			} else if (0 <= sendEcho(fd, curSeq++)) {
 				sent++;
 				lastping = curping;
                                 if (options.flood) {
@@ -802,6 +817,7 @@ mainloop(int fd)
 			}
 			if (!n) {
 				recvd++;
+                                lastRecv = gettimeofday_dbl();
 			} else if (n > 0) {
 				/* still ok, but no reply */
 			} else {
@@ -892,30 +908,34 @@ static void
 usage(int err)
 {
         printf("Usage: %s "
-               "[ -hvV ] "
+               "[ -hfvV ] "
                "[ -c <count> ] "
+               "[ -i <time> ] "
                "[ -p <port> ] "
-               "[ -t <teid> ] "
                "\n       %s "
+               "[ -t <teid> ] "
                "[ -T <ttl> ] "
                "[ -w <time> ] "
                "<target>\n"
                "\n"
-               "\t-c <count>       Stop after sending count pings. "
+               "\t-c <count>       Stop after sending count pings "
                "(default: 0=Infinite)\n"
+               "\t-f <count>       Flood ping mode (limit with -i)\n"
                "\t-h, --help       Show this help text\n"
+               "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
               "\t-t <teid>        Transaction ID (default: 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
                "\t-V, --version    Show version info and exit\n"
-               "\t-w <time>        Time between pings (default: %.1f)\n"
+               "\t-w <time>        Time to wait for a response "
+               "(default: 2*RTT or %.2fs)\n"
                "\n"
                "Report bugs to: thomas@habets.pp.se\n"
                "gtping home page: "
                "<http://www.habets.pp.se/synscan/programs.php?prog=gtping>\n",
                argv0, argv0lenSpaces(),
-               DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_INTERVAL);
+               DEFAULT_INTERVAL, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_WAIT);
         exit(err);
 }
 
@@ -947,12 +967,15 @@ main(int argc, char **argv)
 
 	argv0 = argv[0];
 
-        {
+        { /* handle GNU options */
                 int c;
                 for (c = 1; c < argc; c++) {
-                        if (!strcmp(argv[c], "--help")) {
+                        
+                        if (!strcmp(argv[c], "--")) {
+                                break;
+                        } else if (!strcmp(argv[c], "--help")) {
                                 usage(0);
-                        } if (!strcmp(argv[c], "--version")) {
+                        } else if (!strcmp(argv[c], "--version")) {
                                 printVersion();
                         }
                 }
@@ -973,7 +996,7 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:fhp:t:T:vVw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:fhi:p:t:T:vVw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
@@ -1001,8 +1024,11 @@ main(int argc, char **argv)
 				break;
                         case 'V':
                                 printVersion();
-			case 'w':
+			case 'i':
 				options.interval = atof(optarg);
+				break;
+			case 'w':
+				options.wait = atof(optarg);
 				break;
 			case '?':
 			default:
@@ -1012,6 +1038,10 @@ main(int argc, char **argv)
 	}
         if (0 > options.interval) {
                 options.interval = DEFAULT_INTERVAL;
+        }
+        if (0 > options.wait) {
+                options.wait = DEFAULT_WAIT;
+                options.autowait = 1;
         }
 	if (options.verbose) {
 		fprintf(stderr, "%s: transaction id: %.8x\n",
