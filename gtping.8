@@ -5,7 +5,7 @@
 gtping \- sends GTP pings to a GSN
 .PP 
 .SH "SYNOPSIS"
-\fBgtping\fP [ -\fBhvV\fP ] [ -\fBc\fP \fIcount\fP ] [ -\fBp\fP \fIport\fP ] [ -\fBt\fP \fIteid\fP ] [ -\fBT\fP \fIttl\fP ] [ -\fBw\fP \fItime\fP ] \fIdestination\fP
+\fBgtping\fP [ \fB-hfvV\fP ] [ \fB-c\fP \fIcount\fP ] [ \fB-i\fP \fItime\fP ] [ \fB-p\fP \fIport\fP ] [ \fB-t\fP \fIteid\fP ] [ \fB-T\fP \fIttl\fP ] [ \fB-w\fP \fItime\fP ] \fIdestination\fP
 .PP 
 .SH "DESCRIPTION"
 \fBgtping\fP sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -13,7 +13,7 @@ to the specified \fIhost\fP and displays the replies similarly to \fBping\fP
 on most systems (\fBping -s\fP on Solaris)\&.
 .PP 
 By default one request is sent each second\&. This can be changed with
-\fB-w\fP\&.
+\fB-i\fP\&.
 .PP 
 .SH "OPTIONS"
 
@@ -21,22 +21,27 @@ By default one request is sent each second\&. This can be changed with
 .IP "-c \fIcount\fP"
 Stop after sending \fIcount\fP pings\&. Default is 0 which
 means continue until user presses Ctrl-C\&.
+.IP "-f"
+Flood mode\&.  \fBi\fP is still respected to "flood slowly"\&.
 .IP "-h, --help"
 Show brief usage info and exit\&.
-.IP "-V, --version"
-Show version and exit\&.
+.IP "-i \fItime\fP"
+Time in seconds between sending pings\&. Default is 1\&.
+Fractional seconds are supported, for example \fB-w\fP 0\&.1 will send one
+ping every 100ms\&.
 .IP "-p \fIport\fP"
 Destination UDP port to use\&. Default is 2123\&.
 .IP "-t \fIteid\fP"
 Transaction ID to use\&. Default is 0\&.
 .IP "-T \fIttl\fP"
 TTL of IP packet\&. Default is to use system default\&.
+.IP "-V, --version"
+Show version and exit\&.
 .IP "-w \fItime\fP"
-Time in seconds between sending pings\&. Default is 1\&.
-Fractional seconds are supported, for example \fB-w 0\&.1\fP will send one
-ping every 100ms\&.
-
-.PP 
+Don\&'t exit before waiting for the last ping for this long\&.
+Default -w is auto-detect, use 2*average RTT, and while no replies have been
+seen, wait for 2 seconds\&.
+.IP 
 .SH "Example"
 .nf
 .sp

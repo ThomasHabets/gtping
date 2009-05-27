@@ -3,7 +3,7 @@ manpage(gtping)(8)(8th May, 2009)(gtping)()
 manpagename(gtping)(sends GTP pings to a GSN)
 
 manpagesynopsis()
-    bf(gtping) [ -bf(hvV) ] [ -bf(c) em(count) ] [ -bf(p) em(port) ] [ -bf(t) em(teid) ] [ -bf(T) em(ttl) ] [ -bf(w) em(time) ] em(destination)
+    bf(gtping) [ bf(-hfvV) ] [ bf(-c) em(count) ] [ bf(-i) em(time) ] [ bf(-p) em(port) ] [ bf(-t) em(teid) ] [ bf(-T) em(ttl) ] [ bf(-w) em(time) ] em(destination)
 
 manpagedescription()
     bf(gtping) sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -11,21 +11,26 @@ manpagedescription()
     on most systems (bf(ping -s) on Solaris).
 
     By default one request is sent each second. This can be changed with
-    bf(-w).
+    bf(-i).
 
 manpageoptions()
 startdit()
 
     dit(-c em(count)) Stop after sending em(count) pings. Default is 0 which
         means continue until user presses Ctrl-C.
+    dit(-f) Flood mode.  bf(i) is still respected to "flood slowly".
     dit(-h, --help) Show brief usage info and exit.
-    dit(-V, --version) Show version and exit.
+    dit(-i em(time)) Time in seconds between sending pings. Default is 1.
+        Fractional seconds are supported, for example bf(-w) 0.1 will send one
+        ping every 100ms.
     dit(-p em(port)) Destination UDP port to use. Default is 2123.
     dit(-t em(teid)) Transaction ID to use. Default is 0.
     dit(-T em(ttl)) TTL of IP packet. Default is to use system default.
-    dit(-w em(time)) Time in seconds between sending pings. Default is 1.
-        Fractional seconds are supported, for example bf(-w 0.1) will send one
-        ping every 100ms.
+    dit(-V, --version) Show version and exit.
+    dit(-w em(time)) Don't exit before waiting for the last ping for this long.
+    Default -w is auto-detect, use 2*average RTT, and while no replies have been
+    seen, wait for 2 seconds.
+
 enddit()
 
 manpagesection(Example)
