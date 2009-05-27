@@ -45,7 +45,7 @@ def loopFixed(fd, num = 2):
         if ord(msg) != 1:
             continue
         for n in range(num):
-            fd.sendto(struct.pack('cchlhcc',
+            fd.sendto(struct.pack('cchihcc',
                                   flags,
                                   chr(2),
                                   ln,
@@ -65,7 +65,7 @@ def loopRandom(fd, minnum = 0, maxnum = 2):
         if ord(msg) != 1:
             continue
         for n in range(random.randint(minnum,maxnum)):
-            fd.sendto(struct.pack('cchlhcc',
+            fd.sendto(struct.pack('cchihcc',
                                   flags,
                                   chr(2),
                                   ln,
@@ -106,7 +106,7 @@ def loopJitter(fd, mintime=0, maxtime=1):
                                  + mintime
                                  + random.random() * (maxtime-mintime),
                                  fd, src,
-                               struct.pack('cchlhcc',
+                               struct.pack('cchihcc',
                                            flags,
                                            chr(2),
                                            ln,
@@ -121,10 +121,10 @@ def main():
     fd = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     fd.bind( ('', 2123) )
     try:
-        loopNormal(fd)
+        #loopNormal(fd)
         #loopDup(fd)
         #loopRandom(fd)
-        #loopJitter(fd, mintime=0, maxtime=5)
+        loopJitter(fd, mintime=0, maxtime=1)
     except KeyboardInterrupt:
         fd.close()
         return
