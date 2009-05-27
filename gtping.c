@@ -680,11 +680,11 @@ recvEchoReply(int fd)
 
         /* detect packet reordering */
         if (!isDup) {
-                if (highestSeq > gtp.seq) {
+                if (highestSeq > htons(gtp.seq)) {
                         reorder++;
                         isReorder = 1;
                 } else {
-                        highestSeq = gtp.seq;
+                        highestSeq = htons(gtp.seq);
                 }
         }
 
