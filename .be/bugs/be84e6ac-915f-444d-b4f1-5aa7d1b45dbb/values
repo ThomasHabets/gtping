@@ -1,0 +1,35 @@
+
+
+
+creator=Thomas Habets <thomas@habets.pp.se>
+
+
+
+
+
+
+severity=minor
+
+
+
+
+
+
+status=open
+
+
+
+
+
+
+summary=don't just remember the last TRACKPINGS_SIZE pings. Remember dynamically at least -w secs back (and at least 1000)
+
+
+
+
+
+
+time=Wed, 27 May 2009 21:33:03 +0000
+
+
+
