@@ -127,7 +127,6 @@ def main():
         loopJitter(fd, mintime=0, maxtime=1)
     except KeyboardInterrupt:
         fd.close()
-        return
 
 if __name__ == '__main__':
     main()
