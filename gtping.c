@@ -326,7 +326,7 @@ setupSocket()
 				       sizeof(options.ttl))) {
 				fprintf(stderr,
 					"%s: setsockopt(%d, SOL_IP, IP_TTL, "
-					"%d): %s", argv0, fd, options.ttl,
+					"%d): %s\n", argv0, fd, options.ttl,
 					strerror(errno));
 			}
 		}
@@ -338,7 +338,7 @@ setupSocket()
 				       sizeof(options.tos))) {
 				fprintf(stderr,
 					"%s: setsockopt(%d, SOL_IP, IP_TOS, "
-					"%d): %s", argv0, fd, options.tos,
+					"%d): %s\n", argv0, fd, options.tos,
 					strerror(errno));
 			}
 		}
@@ -352,7 +352,7 @@ setupSocket()
 				       sizeof(options.ttl))) {
 				fprintf(stderr,
 					"%s: setsockopt(%d, SOL_IPV6, "
-					"IPV6_HOPLIMIT, %d): %s",
+					"IPV6_HOPLIMIT, %d): %s\n",
 					argv0, fd, options.ttl,
 					strerror(errno));
 			}
@@ -924,7 +924,8 @@ usage(int err)
                "\t-h, --help       Show this help text\n"
                "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
-              "\t-t <teid>        Transaction ID (default: 0)\n"
+               "\t-Q <dscp>        Set ToS/DSCP bit (default: don't set)\n"
+               "\t-t <teid>        Transaction ID (default: 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
                "\t-V, --version    Show version info and exit\n"
@@ -954,6 +955,78 @@ printVersion()
         exit(0);
 }
 
+
+/**
+ *
+ * return -1 on error, or 8bit number to put in IP ToS-field.
+ */
+static int
+parseQos(const char *instr)
+{
+        static const char *tos[][2] = {
+                {"ef","0x46"},
+                {"be","0"},
+                {(char*)NULL,(char*)NULL}
+        };
+        char *lv;
+        const char *rets = NULL;
+        int ret = -1;
+        char *p;
+        const char *cp;
+        int c;
+
+        /* check for empty string. Not allowed */
+        if (!strlen(instr)) {
+                return -1;
+        }
+
+        /* check for special case instr = zeroes because strtol() can't.
+         * This code depends on instr not being empty (checked above) */
+        for (cp = instr; ; cp++) {
+                if (*cp != '0') {
+                        break;  
+                }
+                if (*cp == 0) {
+                        return 0;
+                }
+        }
+
+        /* lowercase input */
+        lv = strdup(instr);
+        if (!lv) {
+                fprintf(stderr, "%s: strdup(\"%s\") failed\n", argv0, instr);
+                return -1;
+        }
+        for (p = lv; *p; p++) {
+                *p = tolower(*p);
+        }
+
+        /* find match in table */
+        for (c = 0; tos[c][0]; c++) {
+                const char **cur = tos[c];
+                if (!strcmp(lv, cur[0])) {
+                        rets = cur[1];
+                }
+        }
+        
+        
+        if (rets) {
+                /* if match was found, translate to number */
+                ret = (int)strtol(rets, NULL, NULL);
+        } else {
+                /* if no match, try to parse as a number directly */
+                ret = strtol(lv, NULL, NULL);
+                if (!ret) {
+                        /* the real case of -Q 0 is handled above */
+                        ret = -1;
+                }
+        }
+        free(lv);
+        if (ret > 255) {
+                ret = -1;
+        }
+        return ret;
+}
 
 /**
  *
@@ -996,7 +1069,7 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:fhi:p:t:T:vVw:"))) {
+		while (-1 != (c = getopt(argc, argv, "c:fhi:p:Q:t:T:vVw:"))) {
 			switch(c) {
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
@@ -1005,6 +1078,10 @@ main(int argc, char **argv)
                                 options.flood = 1;
                                 if (0 > options.interval) {
                                         options.interval = 0;
+                                        fprintf(stderr,
+                                                "%s: invalid interval \"%s\", "
+                                                "set to 0\n",
+                                                argv0, optarg);
                                 }
                                 break;
 			case 'h':
@@ -1030,6 +1107,18 @@ main(int argc, char **argv)
 			case 'w':
 				options.wait = atof(optarg);
 				break;
+                        case 'Q':
+                                if (-1 == (options.tos = parseQos(optarg))) {
+                                        fprintf(stderr,
+                                                "%s: invalid ToS/DSCP \"%s\", "
+                                                "left as-is.\n", argv0,optarg);
+                                        fprintf(stderr, "%s: "
+                                                "Valid are "
+                                                "BE,EF,AF[1-4][1-3],CS[0-7] "
+                                                "and numeric (0x for hex).\n",
+                                                argv0);
+                                }
+                                break;
 			case '?':
 			default:
 				usage(2);
