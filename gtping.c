@@ -168,7 +168,7 @@ static struct Options options = {
         target: 0,     /* arg */
         targetip: 0,   /* resolved arg */
         ttl: -1,       /* -T */
-        tos: -1,       /* -Q (not implemented yet) */
+        tos: -1,       /* -Q */
         teid: 0,       /* -t */
         af: AF_UNSPEC, /* -4 or -6 */
 };
