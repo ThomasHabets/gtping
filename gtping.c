@@ -357,7 +357,19 @@ setupSocket()
 					strerror(errno));
 			}
 		}
-                /* FIXME: set tos */
+		if (options.tos >= 0) {
+			if (setsockopt(fd,
+				       SOL_IPV6,
+				       IPV6_TCLASS,
+				       &options.tos,
+				       sizeof(options.tos))) {
+				fprintf(stderr,
+					"%s: setsockopt(%d, SOL_IPV6, "
+                                        "IPV6_TCLASS, %d): %s\n",
+                                        argv0, fd, options.tos,
+					strerror(errno));
+			}
+		}
 	}
 
 	/* connect() */
