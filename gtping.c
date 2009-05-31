@@ -131,7 +131,7 @@ struct Options {
 
 static const char *version = PACKAGE_VERSION;
 
-static volatile int time_to_die = 0;
+static volatile int sigintReceived = 0;
 static unsigned int curSeq = 0;
 static double startTime;
 static double sendTimes[TRACKPINGS_SIZE]; /* RTT data*/
@@ -182,7 +182,7 @@ static void
 sigint(int unused)
 {
 	unused = unused;
-	time_to_die = 1;
+	sigintReceived = 1; /* timet ot die */
 }
 
 /**
@@ -789,7 +789,7 @@ mainloop(int fd)
 	       options.targetip,
 	       (int)sizeof(struct GtpEcho));
 
-	for(;!time_to_die;) {
+	for(;!sigintReceived;) {
 		struct pollfd fds;
 		double timewait;
 		int n;
