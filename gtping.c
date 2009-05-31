@@ -120,12 +120,13 @@ struct Options {
         double interval;
         double wait;
         int autowait;
-        unsigned int count;
+        unsigned long count;
         uint32_t teid;
         const char *target;  /* what is on the cmdline */
         char *targetip;      /* IPv* address string */
         int ttl;
         int tos;
+        int af;
 };
 
 static const char *version = PACKAGE_VERSION;
@@ -160,15 +161,16 @@ static struct Options options = {
          * set this way to make -f work with -i  */
         interval: -1, 
         
-        wait: -1,    /* -w */
-        autowait: 0,
+        wait: -1,      /* -w */
+        autowait: 0,   /* 0 = -w not used, continuously update options.wait  */
 
-        count: 0,    /* -c */
-        target: 0,   /* arg */
-        targetip: 0, /* resolved arg */
-        ttl: -1,     /* -T */
-        tos: -1,     /* -Q (not implemented yet) */
-        teid: 0,     /* -t */
+        count: 0,      /* -c, 0 is infinite */
+        target: 0,     /* arg */
+        targetip: 0,   /* resolved arg */
+        ttl: -1,       /* -T */
+        tos: -1,       /* -Q (not implemented yet) */
+        teid: 0,       /* -t */
+        af: AF_UNSPEC, /* -4 or -6 */
 };
 
 static double gettimeofday_dbl();
@@ -211,7 +213,7 @@ setupSocket()
 	/* resolve to sockaddr */
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_ADDRCONFIG;
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = options.af;
 	hints.ai_socktype = SOCK_DGRAM;
 	if (0 > (err = getaddrinfo(options.target,
 				   options.port,
@@ -930,6 +932,8 @@ usage(int err)
                "[ -w <time> ] "
                "<target>\n"
                "\n"
+               "\t-4               Force IPv4 (will normally auto-detect)\n"
+               "\t-6               Force IPv6 (will normally auto-detect)\n"
                "\t-c <count>       Stop after sending count pings "
                "(default: 0=Infinite)\n"
                "\t-f <count>       Flood ping mode (limit with -i)\n"
@@ -1087,13 +1091,20 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc, argv, "c:fhi:p:Q:t:T:vVw:"))) {
+		while (-1 != (c = getopt(argc,argv,"46c:fhi:p:Q:t:T:vVw:"))) {
 			switch(c) {
+                        case '4':
+                                options.af = AF_INET;
+                                break;
+                        case '6':
+                                options.af = AF_INET6;
+                                break;
 			case 'c':
 				options.count = strtoul(optarg, 0, 0);
 				break;
                         case 'f':
                                 options.flood = 1;
+                                /* if interval not alread set, set it to 0 */
                                 if (0 > options.interval) {
                                         options.interval = 0;
                                         fprintf(stderr,
@@ -1113,6 +1124,9 @@ main(int argc, char **argv)
 				break;
 			case 'T':
 				options.ttl = strtoul(optarg, 0, 0);
+                                if (options.ttl > 255) {
+                                        options.ttl = 255;
+                                }
 				break;
 			case 'v':
 				options.verbose++;

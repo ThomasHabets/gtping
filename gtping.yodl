@@ -3,7 +3,7 @@ manpage(gtping)(8)(8th May, 2009)(gtping)()
 manpagename(gtping)(sends GTP pings to a GSN)
 
 manpagesynopsis()
-    bf(gtping) [ bf(-hfvV) ] [ bf(-c) em(count) ] [ bf(-i) em(time) ] [ bf(-p) em(port) ] [ bf(-Q <dscp>) ] [ bf(-t) em(teid) ] [ bf(-T) em(ttl) ] [ bf(-w) em(time) ] em(destination)
+    bf(gtping) [ bf(-46hfvV) ] [ bf(-c) em(count) ] [ bf(-i) em(time) ] [ bf(-p) em(port) ] [ bf(-Q <dscp>) ] [ bf(-t) em(teid) ] [ bf(-T) em(ttl) ] [ bf(-w) em(time) ] em(destination)
 
 manpagedescription()
     bf(gtping) sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -16,6 +16,8 @@ manpagedescription()
 manpageoptions()
 startdit()
 
+    dit(-4) Force use of IPv4. Will normally auto-detect.
+    dit(-6) Force use of IPv6. Will normally auto-detect.
     dit(-c em(count)) Stop after sending em(count) pings. Default is 0 which
         means continue until user presses Ctrl-C.
     dit(-f) Flood mode.  bf(i) is still respected to "flood slowly".

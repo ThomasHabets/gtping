@@ -5,7 +5,7 @@
 gtping \- sends GTP pings to a GSN
 .PP 
 .SH "SYNOPSIS"
-\fBgtping\fP [ \fB-hfvV\fP ] [ \fB-c\fP \fIcount\fP ] [ \fB-i\fP \fItime\fP ] [ \fB-p\fP \fIport\fP ] [ \fB-Q <dscp>\fP ] [ \fB-t\fP \fIteid\fP ] [ \fB-T\fP \fIttl\fP ] [ \fB-w\fP \fItime\fP ] \fIdestination\fP
+\fBgtping\fP [ \fB-46hfvV\fP ] [ \fB-c\fP \fIcount\fP ] [ \fB-i\fP \fItime\fP ] [ \fB-p\fP \fIport\fP ] [ \fB-Q <dscp>\fP ] [ \fB-t\fP \fIteid\fP ] [ \fB-T\fP \fIttl\fP ] [ \fB-w\fP \fItime\fP ] \fIdestination\fP
 .PP 
 .SH "DESCRIPTION"
 \fBgtping\fP sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -18,6 +18,10 @@ By default one request is sent each second\&. This can be changed with
 .SH "OPTIONS"
 
 .IP 
+.IP "-4"
+Force use of IPv4\&. Will normally auto-detect\&.
+.IP "-6"
+Force use of IPv6\&. Will normally auto-detect\&.
 .IP "-c \fIcount\fP"
 Stop after sending \fIcount\fP pings\&. Default is 0 which
 means continue until user presses Ctrl-C\&.
@@ -33,7 +37,8 @@ ping every 100ms\&.
 Set IP ToS-field\&. Can use symbolic names or numbers\&.
 Symbolic names are: BE,EF,AF[1-4][1-3],CS[0-7] and numeric\&. Use 0x-prefix
 for hex values and 0-prefix for octal (E\&.g\&. 022 for AF21)\&. Some DSCP
-values such as EF require root privileges on some systems\&.
+values such as EF require root privileges on some systems\&. You will get
+a message on stderr if gtping fails to set the value\&.
 .IP "-p \fIport\fP"
 Destination UDP port to use\&. Default is 2123\&.
 .IP "-t \fIteid\fP"
@@ -44,8 +49,8 @@ TTL of IP packet\&. Default is to use system default\&.
 Show version and exit\&.
 .IP "-w \fItime\fP"
 Don\&'t exit before waiting for the last ping for this long\&.
-Default -w is auto-detect, use 2*average RTT, and while no replies have been
-seen, wait for 10 seconds\&.
+Default -w is auto-detect, use 2*average RTT, and while no replies have
+been seen, wait for 10 seconds\&.
 .IP 
 .SH "Example"
 .nf
