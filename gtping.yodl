@@ -25,7 +25,8 @@ startdit()
         ping every 100ms.
     dit(-Q em(dscp)) Set IP ToS-field. Can use symbolic names or numbers.
       Symbolic names are: BE,EF,AF[1-4][1-3],CS[0-7] and numeric. Use 0x-prefix
-      for hex values (E.g. 0x46 for EF).
+      for hex values and 0-prefix for octal (E.g. 022 for AF21). Some DSCP
+      values such as EF require root privileges on some systems.
     dit(-p em(port)) Destination UDP port to use. Default is 2123.
     dit(-t em(teid)) Transaction ID to use. Default is 0.
     dit(-T em(ttl)) TTL of IP packet. Default is to use system default.
