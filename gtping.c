@@ -152,14 +152,14 @@ static unsigned int connectionRefused = 0;
 /* from cmdline */
 static const char *argv0 = 0;
 static struct Options options = {
-        port: DEFAULT_PORT,
-        verbose: DEFAULT_VERBOSE,
+        port: DEFAULT_PORT,         /* -p */
+        verbose: DEFAULT_VERBOSE,   /* -v */
         
-        flood: 0,
+        flood: 0,      /* -f */
 
         /* if still <0, set to DEFAULT_INTERVAL.
          * set this way to make -f work with -i  */
-        interval: -1, 
+        interval: -1,  /* -i */
         
         wait: -1,      /* -w */
         autowait: 0,   /* 0 = -w not used, continuously update options.wait  */
@@ -893,7 +893,8 @@ mainloop(int fd)
 }
 
 /**
- *
+ * return a string of spaces as long as argv0.
+ * if strlen(argv0) > oh say 19, just use 6 spaces.
  */
 static char*
 argv0lenSpaces()
@@ -922,7 +923,7 @@ static void
 usage(int err)
 {
         printf("Usage: %s "
-               "[ -hfvV ] "
+               "[ -46hfvV ] "
                "[ -c <count> ] "
                "[ -i <time> ] "
                "[ -p <port> ] "
