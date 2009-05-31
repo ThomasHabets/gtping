@@ -964,8 +964,14 @@ static int
 parseQos(const char *instr)
 {
         static const char *tos[][2] = {
-                {"ef","0x46"},
-                {"be","0"},
+                {"ef","46"},   {"be","0"},
+                {"af11", "012"}, {"af12", "014"}, {"af13", "016"},
+                {"af21", "022"}, {"af22", "024"}, {"af23", "026"},
+                {"af31", "032"}, {"af32", "034"}, {"af33", "036"},
+                {"af41", "042"}, {"af42", "044"}, {"af43", "046"},
+                {"cs0",  "000"}, {"cs1",  "010"}, {"cs2",  "020"},
+                {"cs3",  "030"}, {"cs4",  "040"}, {"cs5",  "050"},
+                {"cs6",  "060"}, {"cs7",  "070"},
                 {(char*)NULL,(char*)NULL}
         };
         char *lv;
@@ -1012,10 +1018,10 @@ parseQos(const char *instr)
         
         if (rets) {
                 /* if match was found, translate to number */
-                ret = (int)strtol(rets, NULL, NULL);
+                ret = (int)strtol(rets, 0, 0) << 2;
         } else {
                 /* if no match, try to parse as a number directly */
-                ret = strtol(lv, NULL, NULL);
+                ret = (int)strtol(lv, 0, 0);
                 if (!ret) {
                         /* the real case of -Q 0 is handled above */
                         ret = -1;
