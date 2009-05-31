@@ -774,9 +774,9 @@ mainloop(int fd)
 {
 	unsigned sent = 0;
 	unsigned recvd = 0;
-	double lastping = 0;
-	double curping;
-        double lastRecv = 0;
+	double lastpingTime = 0; /* last time we sent out a ping */
+	double curPingTime;   /* if we ping now, this is the timestamp of it */
+        double lastRecvTime = 0; /* last time we got a reply */
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
@@ -790,20 +790,22 @@ mainloop(int fd)
 	       (int)sizeof(struct GtpEcho));
 
 	for(;!sigintReceived;) {
-		struct pollfd fds;
+                /* max time to wait for replies before checking if it's time
+                 * to send another ping */
 		double timewait;
 		int n;
+		struct pollfd fds;
 
                 /* time to send yet? */
-		curping = gettimeofday_dbl();
-		if (curping > lastping + options.interval) {
+		curPingTime = gettimeofday_dbl();
+		if (curPingTime > lastpingTime + options.interval) {
 			if (options.count && (curSeq == options.count)) {
-				if (lastRecv + options.wait < curping) {
+				if (lastRecvTime+options.wait < curPingTime) {
                                         break;
                                 }
 			} else if (0 <= sendEcho(fd, curSeq++)) {
 				sent++;
-				lastping = curping;
+				lastpingTime = curPingTime;
                                 if (options.flood) {
                                         printf(".");
                                         fflush(stdout);
@@ -816,26 +818,27 @@ mainloop(int fd)
 		fds.revents = 0;
 		
                 /* max waittime: until it's time to send the next one */
-		timewait = (lastping + options.interval) - gettimeofday_dbl();
+		timewait = (lastpingTime+options.interval) -gettimeofday_dbl();
 		if (timewait < 0) {
 			timewait = 0;
 		}
                 timewait *= 0.5; /* leave room for overhead */
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
-			if (fds.revents & POLLERR && ERR_INSPECTION) {
+                        /* FIXME: why depend or ERR_INSPECTION here? */
+			if ((fds.revents & POLLERR) && ERR_INSPECTION) {
 				handleRecvErr(fd, NULL);
 			}
 			if (fds.revents & POLLIN) {
 				n = recvEchoReply(fd);
-			}
-			if (!n) {
-				recvd++;
-                                lastRecv = gettimeofday_dbl();
-			} else if (n > 0) {
-				/* still ok, but no reply */
-			} else {
-				return 1;
+                                if (!n) {
+                                        recvd++;
+                                        lastRecvTime = gettimeofday_dbl();
+                                } else if (n > 0) {
+                                        /* still ok, but no reply */
+                                } else {
+                                        return 1;
+                                }
 			}
 			break;
 		case 0: /* timeout */
