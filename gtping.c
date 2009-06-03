@@ -930,13 +930,13 @@ usage(int err)
                "[ -46hfvV ] "
                "[ -c <count> ] "
                "[ -i <time> ] "
-               "[ -p <port> ] "
                "\n       %s "
+               "[ -p <port> ] "
                "[ -t <teid> ] "
                "[ -T <ttl> ] "
+               "\n       %s "
                "[ -w <time> ] "
                "<target>\n"
-               "\n"
                "\t-4               Force IPv4 (default: auto-detect)\n"
                "\t-6               Force IPv6 (default: auto-detect)\n"
                "\t-c <count>       Stop after sending count pings "
@@ -957,7 +957,9 @@ usage(int err)
                "Report bugs to: thomas@habets.pp.se\n"
                "gtping home page: "
                "<http://www.habets.pp.se/synscan/programs.php?prog=gtping>\n",
-               argv0, argv0lenSpaces(),
+               argv0,
+               argv0lenSpaces(),
+               argv0lenSpaces(),
                DEFAULT_INTERVAL, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_WAIT);
         exit(err);
 }
