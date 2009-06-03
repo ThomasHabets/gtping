@@ -705,7 +705,7 @@ recvEchoReply(int fd)
                 }
                 if (options.autowait) {
                         options.wait = 2 * (totalTime / totalTimeCount);
-                        if (options.verbose) {
+                        if (options.verbose > 1) {
                                 fprintf(stderr,
                                         "%s: Adjusting waittime to %.6f\n",
                                         argv0, options.wait);
@@ -789,6 +789,7 @@ mainloop(int fd)
 	       options.targetip,
 	       (int)sizeof(struct GtpEcho));
 
+        lastRecvTime = startTime;
 	for(;!sigintReceived;) {
                 /* max time to wait for replies before checking if it's time
                  * to send another ping */
@@ -940,7 +941,7 @@ usage(int err)
                "\t-6               Force IPv6 (default: auto-detect)\n"
                "\t-c <count>       Stop after sending count pings "
                "(default: 0=Infinite)\n"
-               "\t-f <count>       Flood ping mode (limit with -i)\n"
+               "\t-f               Flood ping mode (limit with -i)\n"
                "\t-h, --help       Show this help text\n"
                "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
@@ -1184,6 +1185,11 @@ main(int argc, char **argv)
         if (0 > options.wait) {
                 options.wait = DEFAULT_WAIT;
                 options.autowait = 1;
+                if (options.verbose > 1) {
+                        fprintf(stderr, "%s: autowait is ON. "
+                                "Initial wait: %6.3f seconds\n",
+                                argv0, options.wait);
+                }
         }
 	if (options.verbose) {
 		fprintf(stderr, "%s: transaction id: %.8x\n",
