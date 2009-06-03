@@ -941,7 +941,7 @@ usage(int err)
                "\t-6               Force IPv6 (default: auto-detect)\n"
                "\t-c <count>       Stop after sending count pings "
                "(default: 0=Infinite)\n"
-               "\t-f <count>       Flood ping mode (limit with -i)\n"
+               "\t-f               Flood ping mode (limit with -i)\n"
                "\t-h, --help       Show this help text\n"
                "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
