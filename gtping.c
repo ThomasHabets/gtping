@@ -946,7 +946,7 @@ usage(int err)
                "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
                "\t-Q <dscp>        Set ToS/DSCP bit (default: don't set)\n"
-               "\t                 Examples: ef, af21, 46, 0x2e, be, cs3\n"
+               "\t                 Examples: ef, af21, 0xb8, lowdelay\n"
                "\t-t <teid>        Transaction ID (default: 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
@@ -986,14 +986,30 @@ static int
 parseQos(const char *instr)
 {
         static const char *tos[][2] = {
-                {"ef","46"},   {"be","0"},
-                {"af11", "012"}, {"af12", "014"}, {"af13", "016"},
-                {"af21", "022"}, {"af22", "024"}, {"af23", "026"},
-                {"af31", "032"}, {"af32", "034"}, {"af33", "036"},
-                {"af41", "042"}, {"af42", "044"}, {"af43", "046"},
-                {"cs0",  "000"}, {"cs1",  "010"}, {"cs2",  "020"},
-                {"cs3",  "030"}, {"cs4",  "040"}, {"cs5",  "050"},
-                {"cs6",  "060"}, {"cs7",  "070"},
+                /* dscp values */
+                {"ef",   "184"}, {"be",     "0"},
+                {"af11",  "40"}, {"af12",  "48"}, {"af13", "56"},
+                {"af21",  "72"}, {"af22",  "80"}, {"af23", "88"},
+                {"af31", "104"}, {"af32", "112"}, {"af33", "120"},
+                {"af41", "136"}, {"af42", "144"}, {"af43", "152"},
+                {"cs0",    "0"}, {"cs1",   "32"}, {"cs2",  "64"},
+                {"cs3",   "96"}, {"cs4",  "128"}, {"cs5",  "160"},
+                {"cs6",  "192"}, {"cs7",  "224"},
+                /* tos names */
+                {"lowdelay", "0x10"},
+                {"throughput", "0x08"},
+                {"reliability", "0x04"},
+                {"lowcost", "0x02"},
+                {"mincost", "0x02"},
+                /* precedence */
+                {"netcontrol", "0xe0"},
+                {"internetcontrol", "0xc0"},
+                {"critic_ecp", "0xa0"},
+                {"flashoverride", "0x80"},
+                {"flash", "0x60"},
+                {"immediate", "0x40"},
+                {"priority", "0x20"},
+                {"routine", "0x00"},
                 {(char*)NULL,(char*)NULL}
         };
         char *lv;
@@ -1040,7 +1056,7 @@ parseQos(const char *instr)
         
         if (rets) {
                 /* if match was found, translate to number */
-                ret = (int)strtol(rets, 0, 0) << 2;
+                ret = (int)strtol(rets, 0, 0);
         } else {
                 /* if no match, try to parse as a number directly */
                 ret = (int)strtol(lv, 0, 0);
