@@ -3,6 +3,12 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* Define to 1 if you have the `getaddrinfo' function. */
+#undef HAVE_GETADDRINFO
+
+/* Define to 1 if you have the `getnameinfo' function. */
+#undef HAVE_GETNAMEINFO
+
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
 
@@ -12,9 +18,8 @@
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
 
-/* Define to 1 if your system has a GNU libc compatible `malloc' function, and
-   to 0 otherwise. */
-#undef HAVE_MALLOC
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -67,6 +72,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define to 1 if `h_errno' is declared by <netdb.h> */
+#undef H_ERRNO_DECLARED
+
 /* Name of package */
 #undef PACKAGE
 
@@ -105,8 +113,14 @@
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const
 
-/* Define to rpl_malloc if the replacement function should be used. */
-#undef malloc
+/* Define to `unsigned char', `unsigned short', `unsigned int' or `unsigned
+   long' according with size of `sin_port' in `struct sockaddr_in', if
+   <sys/types.h>, <sys/socket.h> or <netinet/in.h> does not define
+   `in_port_t'. */
+#undef in_port_t
+
+/* Define to `int' if <sys/types.h> or <sys/socket.h> does not define. */
+#undef socklen_t
 
 /* Define to the type of an unsigned integer type of width exactly 16 bits if
    such a type exists and the standard includes do not define it. */

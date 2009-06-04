@@ -36,10 +36,11 @@ bin_PROGRAMS = gtping$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure COPYING INSTALL depcomp install-sh \
-	missing
+	$(top_srcdir)/configure COPYING INSTALL depcomp getaddrinfo.c \
+	install-sh memset.c missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/herrno.m4 \
+	$(top_srcdir)/m4/sockinttypes.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -53,6 +54,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_gtping_OBJECTS = gtping.$(OBJEXT)
 gtping_OBJECTS = $(am_gtping_OBJECTS)
 gtping_LDADD = $(LDADD)
+gtping_DEPENDENCIES = $(LIBOBJS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -168,6 +170,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 man_MANS = gtping.8
 gtping_SOURCES = gtping.c
+LDADD = $(LIBOBJS)
 GIT = git
 GPG = gpg
 GZIP = gzip
@@ -260,6 +263,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/getaddrinfo.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/memset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtping.Po@am__quote@
 
 .c.o:
@@ -536,7 +541,7 @@ clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf ./$(DEPDIR)
+	-rm -rf $(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -572,7 +577,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf ./$(DEPDIR)
+	-rm -rf $(DEPDIR) ./$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

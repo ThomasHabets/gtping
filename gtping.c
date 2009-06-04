@@ -45,6 +45,10 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
+#include "getaddrinfo.h"
+#endif
+
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP
 #endif
@@ -347,6 +351,11 @@ setupSocket()
 	}
 	if (addrs->ai_family == AF_INET6) {
 		if (options.ttl > 0) {
+#ifndef IPV6_HOPLIMIT
+                        fprintf(stderr,
+                                "%s: Setting hoplimit on IPv6 "
+                                "is not supported on your OS\n", argv0);
+#else
 			if (setsockopt(fd,
 				       SOL_IPV6,
 				       IPV6_HOPLIMIT,
@@ -358,8 +367,14 @@ setupSocket()
 					argv0, fd, options.ttl,
 					strerror(errno));
 			}
+#endif
 		}
 		if (options.tos >= 0) {
+#ifndef IPV6_TCLASS
+                        fprintf(stderr,
+                                "%s: Setting traffic class on IPv6 "
+                                "is not supported on your OS\n", argv0);
+#else
 			if (setsockopt(fd,
 				       SOL_IPV6,
 				       IPV6_TCLASS,
@@ -371,6 +386,7 @@ setupSocket()
                                         argv0, fd, options.tos,
 					strerror(errno));
 			}
+#endif
 		}
 	}
 

@@ -6,6 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 bin_PROGRAMS = gtping
 man_MANS = gtping.8
 gtping_SOURCES = gtping.c
+LDADD = $(LIBOBJS)
 
 GIT=git
 GPG=gpg

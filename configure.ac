@@ -25,7 +25,7 @@ AC_SEARCH_LIBS([send], [socket])
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([arpa/inet.h netdb.h netinet/in.h stdlib.h string.h \
-sys/socket.h sys/time.h unistd.h])
+sys/socket.h sys/time.h unistd.h memory.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -35,10 +35,23 @@ AC_TYPE_UINT32_T
 AC_C_VOLATILE
 
 # Checks for library functions.
-AC_FUNC_MALLOC
+#AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
-AC_CHECK_FUNCS([gettimeofday memset socket sqrt strerror strtoul])
+AC_CHECK_FUNCS([memcpy gettimeofday memset socket sqrt strerror strtoul])
+AC_REPLACE_FUNCS(memset)
 
+# Getaddrinfo
+m4_include([m4/herrno.m4])
+m4_include([m4/sockinttypes.m4])
+AC_DECL_H_ERRNO
+AC_TYPE_SOCKLEN_T
+AC_TYPE_IN_PORT_T
+AC_CHECK_FUNCS(getaddrinfo getnameinfo)
+if test "$ac_cv_func_getaddrinfo$ac_cv_func_getnameinfo" != yesyes ; then
+   AC_LIBOBJ(getaddrinfo)
+fi
+
+# Output
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
