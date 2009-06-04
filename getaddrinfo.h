@@ -39,10 +39,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-#ifndef HAVE_SOCKLEN_T
-typedef int socklen_t;
-#endif
-
 /********************************************************************/
 /*
  * Undefine all the macros.
