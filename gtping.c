@@ -124,8 +124,8 @@ struct Options {
         int autowait;
         unsigned long count;
         uint32_t teid;
-        const char *target;  /* what is on the cmdline */
-        char *targetip;      /* IPv* address string */
+        const char *target;
+        char *targetip;
         int ttl;
         int tos;
         int af;
@@ -154,24 +154,24 @@ static unsigned int connectionRefused = 0;
 /* from cmdline */
 static const char *argv0 = 0;
 static struct Options options = {
-        port: DEFAULT_PORT,         /* -p */
-        verbose: DEFAULT_VERBOSE,   /* -v */
+        port: DEFAULT_PORT,         /* -p <port> */
+        verbose: DEFAULT_VERBOSE,   /* -v increments */
         
         flood: 0,      /* -f */
 
         /* if still <0, set to DEFAULT_INTERVAL.
          * set this way to make -f work with -i  */
-        interval: -1,  /* -i */
+        interval: -1,  /* -i <time> */
         
-        wait: -1,      /* -w */
+        wait: -1,      /* -w <time> */
         autowait: 0,   /* 0 = -w not used, continuously update options.wait  */
 
         count: 0,      /* -c, 0 is infinite */
         target: 0,     /* arg */
         targetip: 0,   /* resolved arg */
-        ttl: -1,       /* -T */
-        tos: -1,       /* -Q */
-        teid: 0,       /* -t */
+        ttl: -1,       /* -T <ttl> */
+        tos: -1,       /* -Q <dscp> */
+        teid: 0,       /* -t <teid> */
         af: AF_UNSPEC, /* -4 or -6 */
 };
 
@@ -193,7 +193,7 @@ gettimeofday_dbl()
 	struct timeval tv;
         if (gettimeofday(&tv, NULL)) {
 		fprintf(stderr,"%s: gettimeofday(): %s\n",
-			argv0,strerror(errno));
+			argv0, strerror(errno));
 		return time(0);
 	}
 	return tv2dbl(&tv);
