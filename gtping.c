@@ -293,6 +293,7 @@ setupSocket()
         errInspectionInit(fd, addrs);
 
 	if (addrs->ai_family == AF_INET) {
+                int on = 1;
 		if (options.ttl > 0) {
 			if (setsockopt(fd,
 				       SOL_IP,
@@ -317,8 +318,31 @@ setupSocket()
 					strerror(errno));
 			}
 		}
+		if (setsockopt(fd,
+			       SOL_IP,
+			       IP_RECVTTL,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, "
+				"IP_RECVTTL, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
+#ifdef IP_RECVTOS
+		if (setsockopt(fd,
+			       SOL_IP,
+			       IP_RECVTOS,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, "
+				"IP_RECVTOS, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
+#endif
 	}
 	if (addrs->ai_family == AF_INET6) {
+                int on = 1;
 		if (options.ttl > 0) {
 #ifndef IPV6_HOPLIMIT
                         fprintf(stderr,
@@ -356,6 +380,26 @@ setupSocket()
 					strerror(errno));
 			}
 #endif
+		}
+		if (setsockopt(fd,
+			       SOL_IPV6,
+			       IPV6_RECVHOPLIMIT,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IPV6, "
+				"IPV6_RECVHOPLIMIT, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
+                if (setsockopt(fd,
+			       SOL_IPV6,
+			       IPV6_RECVTCLASS,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IPV6, "
+				"IPV6_RECVTCLASS, on): %s\n",
+				argv0, fd, strerror(errno));
 		}
 	}
 
@@ -471,17 +515,27 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
                     || cmsg->cmsg_level == SOL_IPV6) {
                         switch(cmsg->cmsg_type) {
                         case IP_TOS:
+#ifdef IP_RECVTOS
+                        case IP_RECVTOS:
+#endif
                         case IPV6_TCLASS:
+                        case IPV6_RECVTCLASS:
                                 if (tos) {
                                         *tos=*(unsigned char*)CMSG_DATA(cmsg);
                                 }
                                 break;
                         case IP_TTL:
+                        case IP_RECVTTL:
                         case IPV6_HOPLIMIT:
+                        case IPV6_RECVHOPLIMIT:
                                 if (ttl) {
                                         *ttl=*(unsigned char*)CMSG_DATA(cmsg);
                                 }
                                 break;
+                        default:
+                                fprintf(stderr,
+                                        "%s: Unknown cmsg: %d\n",
+                                        argv0, cmsg->cmsg_type);
                         }
                 }
         }
@@ -598,15 +652,32 @@ recvEchoReply(int fd)
 	}
 
         /* create ttl string */
-        ttlString = allocFormat("ttl=%d ", ttl);
+        if (0 <= ttl) {
+                ttlString = allocFormat("ttl=%d ", ttl);
+        }
 
         /* create tos string */
-        {
+        if (0 <= tos) {
                 char scratch[128];
                 tosString = allocFormat("ToS=%s ",
                                         tos2String(tos,
                                                    scratch,
                                                    sizeof(scratch)));
+        }
+
+        /* check packet size */
+        if (n < sizeof(struct GtpEcho)) {
+                fprintf(stderr, "%s: Short packet received: %d < 12\n",
+                        argv0, n);
+                ret = 1;
+                goto errout;
+        }
+        if (n > sizeof(struct GtpEcho)) {
+                if (options.verbose) {
+                        printf("%s: Long packet received: %d < 12\n",
+                               argv0, n);
+                }
+                /* continue parsing packet... */
         }
 
 	/* replies use teid 0 */
@@ -674,8 +745,8 @@ recvEchoReply(int fd)
                        n,
                        options.targetip,
                        htons(gtp.seq),
-                       ttlString,
-                       tosString,
+                       ttlString ? ttlString : "",
+                       tosString ? tosString : "",
                        lag,
                        isDup ? " (DUP)" : "",
                        isReorder ? " (out of order)" : "");

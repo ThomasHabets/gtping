@@ -49,26 +49,6 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 				"%s: setsockopt(%d, SOL_IP, IP_RECVERR, on): "
 				"%s\n", argv0, fd, strerror(errno));
 		}
-		if (setsockopt(fd,
-			       SOL_IP,
-			       IP_RECVTTL,
-			       &on,
-			       sizeof(on))) {
-			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IP, "
-				"IP_RECVTTL, on): %s\n",
-				argv0, fd, strerror(errno));
-		}
-		if (setsockopt(fd,
-			       SOL_IP,
-			       IP_RECVTOS,
-			       &on,
-			       sizeof(on))) {
-			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IP, "
-				"IP_RECVTOS, on): %s\n",
-				argv0, fd, strerror(errno));
-		}
 	}
 	if (addrs->ai_family == AF_INET6) {
 		int on = 1;
@@ -82,6 +62,8 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 				"IPV6_RECVERR, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
+
+		/* sometimes needed because IPV6_RECVHOPLIMIT can be bad */
 		if (setsockopt(fd,
 			       SOL_IPV6,
 			       REAL_IPV6_RECVHOPLIMIT,
@@ -90,16 +72,6 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 			fprintf(stderr,
 				"%s: setsockopt(%d, SOL_IPV6, "
 				"IPV6_RECVHOPLIMIT, on): %s\n",
-				argv0, fd, strerror(errno));
-		}
-		if (setsockopt(fd,
-			       SOL_IPV6,
-			       IPV6_RECVTCLASS,
-			       &on,
-			       sizeof(on))) {
-			fprintf(stderr,
-				"%s: setsockopt(%d, SOL_IPV6, "
-				"IPV6_RECVTCLASS, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
 	}
