@@ -806,7 +806,7 @@ mainloop(int fd)
 	       (int)sizeof(struct GtpEcho));
 
         lastRecvTime = startTime;
-	for(;!sigintReceived;) {
+	while (!sigintReceived) {
                 /* max time to wait for replies before checking if it's time
                  * to send another ping */
 		double timewait;
