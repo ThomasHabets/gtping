@@ -32,6 +32,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <time.h>
@@ -134,6 +135,34 @@ struct Options options = {
         tos: -1,       /* -Q <dscp> */
         teid: 0,       /* -t <teid> */
         af: AF_UNSPEC, /* -4 or -6 */
+};
+
+static const char *tosTable[][2] = {
+        /* dscp values */
+        {"ef",   "184"}, {"be",     "0"},
+        {"af11",  "40"}, {"af12",  "48"}, {"af13", "56"},
+        {"af21",  "72"}, {"af22",  "80"}, {"af23", "88"},
+        {"af31", "104"}, {"af32", "112"}, {"af33", "120"},
+        {"af41", "136"}, {"af42", "144"}, {"af43", "152"},
+        {"cs0",    "0"}, {"cs1",   "32"}, {"cs2",  "64"},
+        {"cs3",   "96"}, {"cs4",  "128"}, {"cs5",  "160"},
+        {"cs6",  "192"}, {"cs7",  "224"},
+        /* tos names */
+        {"lowdelay", "0x10"},
+        {"throughput", "0x08"},
+        {"reliability", "0x04"},
+        {"lowcost", "0x02"},
+        {"mincost", "0x02"},
+        /* precedence */
+        {"netcontrol", "0xe0"},
+        {"internetcontrol", "0xc0"},
+        {"critic_ecp", "0xa0"},
+        {"flashoverride", "0x80"},
+        {"flash", "0x60"},
+        {"immediate", "0x40"},
+        {"priority", "0x20"},
+        {"routine", "0x00"},
+        {(char*)NULL,(char*)NULL}
 };
 
 /**
@@ -412,6 +441,108 @@ sendEcho(int fd, int seq)
 }
 
 /**
+ *
+ */
+ssize_t
+doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
+{
+        struct msghdr msgh;
+        struct cmsghdr *cmsg;
+        struct iovec iov;
+        char msgcontrol[10000];
+        ssize_t n;
+
+        memset(&iov, 0, sizeof(iov));
+        iov.iov_base = data;
+        iov.iov_len = len;
+
+        memset(&msgh, 0, sizeof(msgh));
+        
+        msgh.msg_iov = &iov;
+        msgh.msg_iovlen = 1;
+        msgh.msg_control = msgcontrol;
+        msgh.msg_controllen = sizeof(msgcontrol);
+
+        n = recvmsg(sock, &msgh, MSG_WAITALL);
+        for (cmsg = CMSG_FIRSTHDR(&msgh);
+             cmsg != NULL;
+             cmsg = CMSG_NXTHDR(&msgh,cmsg)) {
+                if (cmsg->cmsg_level == SOL_IP
+                    || cmsg->cmsg_level == SOL_IPV6) {
+                        switch(cmsg->cmsg_type) {
+                        case IP_TOS:
+                        case IPV6_TCLASS:
+                                if (tos) {
+                                        *tos=*(unsigned char*)CMSG_DATA(cmsg);
+                                }
+                                break;
+                        case IP_TTL:
+                        case IPV6_HOPLIMIT:
+                                if (ttl) {
+                                        *ttl=*(unsigned char*)CMSG_DATA(cmsg);
+                                }
+                                break;
+                        }
+                }
+        }
+        return n;
+}
+
+/**
+ * For a given tos number, find the tos name.
+ * Output is written to buffer of length buflen (incl null terminator).
+ */
+static const char*
+tos2String(int tos, char *buf, size_t buflen)
+{
+        int c;
+
+        for (c = 0; tosTable[c][0]; c++) {
+                const char **cur = tosTable[c];
+                if (tos == atoi(cur[1])) {
+                        snprintf(buf, buflen, "%s", cur[0]);
+                        return buf;
+                }
+        }
+        snprintf(buf, buflen, "%.2x", tos);
+        return buf;
+}
+
+/**
+ * Allocate and 
+ *
+ * arbitrary limit: never handle bigger string than about a MB
+ */
+static const char*
+allocFormat(const char *fmt, ...)
+{
+        va_list ap;
+        char *ret = 0;
+        size_t size = 64;
+        int n;
+
+        va_start(ap, fmt);
+        
+        do {
+                
+                if (size > 1048576) {
+                        fprintf(stderr,
+                                "%s: allocFormat() error: "
+                                "size just kept getting bigger and bigger\n",
+                                argv0);
+                        return 0;
+                }
+                ret = realloc(0, size);
+
+                n = vsnprintf(ret, size, fmt, ap);
+        } while ((n < 0) || (n > size));
+        
+        va_end(ap);
+
+        return ret;
+}
+
+/**
  * return 0 on success/got reply,
  *        <0 on fail. Errno returned.
  *        >0 on success, but no packet (EINTR or dup packet)
@@ -420,12 +551,17 @@ static int
 recvEchoReply(int fd)
 {
 	int err;
+        int ret = 0;
 	struct GtpEcho gtp;
 	int n;
 	double now;
 	char lag[128];
         int isDup = 0;
         int isReorder = 0;
+        int ttl = -1;
+        int tos = -1;
+        const char *tosString = 0;
+        const char *ttlString = 0;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
@@ -434,37 +570,58 @@ recvEchoReply(int fd)
 	now = gettimeofday_dbl();
 	
 	memset(&gtp, 0, sizeof(struct GtpEcho));
-
-	if (0 > (n = recv(fd, (void*)&gtp, sizeof(struct GtpEcho), 0))) {
+	if (0 > (n = doRecv(fd,
+                            (void*)&gtp,
+                            sizeof(struct GtpEcho),
+                            &ttl,
+                            &tos))) {
 		switch(errno) {
                 case ECONNREFUSED:
                         connectionRefused++;
 			handleRecvErr(fd, "Port closed");
-                        return 1;
+                        ret = 1;
+                        goto errout;
 		case EINTR:
-			return 1;
+                        ret = 1;
+                        goto errout;
                 case EHOSTUNREACH:
 			handleRecvErr(fd, "Host unreachable or TTL exceeded");
-                        return 1;
+                        ret = 1;
+                        goto errout;
 		default:
 			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s\n",
 				argv0, fd, strerror(errno));
-			return err;
+                        ret = err;
+                        goto errout;
 		}
 	}
+
+        /* create ttl string */
+        ttlString = allocFormat("ttl=%d ", ttl);
+
+        /* create tos string */
+        {
+                char scratch[128];
+                tosString = allocFormat("ToS=%s ",
+                                        tos2String(tos,
+                                                   scratch,
+                                                   sizeof(scratch)));
+        }
 
 	/* replies use teid 0 */
 	if (0) {
 		if (gtp.teid != htonl(options.teid)) {
-			return 1;
+                        ret = 1;
+                        goto errout;
 		}
 	}
 	if (gtp.msg != 0x02) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
 			argv0, gtp.msg);
-		return 0;
+                ret = 0;
+                goto errout;
 	}
 
         if (curSeq - htons(gtp.seq) >= TRACKPINGS_SIZE) {
@@ -513,10 +670,12 @@ recvEchoReply(int fd)
                         printf("\b \b");
                 }
         } else {
-                printf("%u bytes from %s: seq=%u time=%s%s%s\n",
+                printf("%u bytes from %s: seq=%u %s%stime=%s%s%s\n",
                        n,
                        options.targetip,
                        htons(gtp.seq),
+                       ttlString,
+                       tosString,
                        lag,
                        isDup ? " (DUP)" : "",
                        isReorder ? " (out of order)" : "");
@@ -524,7 +683,11 @@ recvEchoReply(int fd)
         if (isDup) {
                 dups++;
         }
-	return isDup;
+	ret = isDup;
+ errout:
+        free((char*)tosString);
+        free((char*)ttlString);
+        return ret;
 }
 
 /**
@@ -748,33 +911,6 @@ printVersion()
 static int
 parseQos(const char *instr)
 {
-        static const char *tos[][2] = {
-                /* dscp values */
-                {"ef",   "184"}, {"be",     "0"},
-                {"af11",  "40"}, {"af12",  "48"}, {"af13", "56"},
-                {"af21",  "72"}, {"af22",  "80"}, {"af23", "88"},
-                {"af31", "104"}, {"af32", "112"}, {"af33", "120"},
-                {"af41", "136"}, {"af42", "144"}, {"af43", "152"},
-                {"cs0",    "0"}, {"cs1",   "32"}, {"cs2",  "64"},
-                {"cs3",   "96"}, {"cs4",  "128"}, {"cs5",  "160"},
-                {"cs6",  "192"}, {"cs7",  "224"},
-                /* tos names */
-                {"lowdelay", "0x10"},
-                {"throughput", "0x08"},
-                {"reliability", "0x04"},
-                {"lowcost", "0x02"},
-                {"mincost", "0x02"},
-                /* precedence */
-                {"netcontrol", "0xe0"},
-                {"internetcontrol", "0xc0"},
-                {"critic_ecp", "0xa0"},
-                {"flashoverride", "0x80"},
-                {"flash", "0x60"},
-                {"immediate", "0x40"},
-                {"priority", "0x20"},
-                {"routine", "0x00"},
-                {(char*)NULL,(char*)NULL}
-        };
         char *lv;
         const char *rets = NULL;
         int ret = -1;
@@ -809,8 +945,8 @@ parseQos(const char *instr)
         }
 
         /* find match in table */
-        for (c = 0; tos[c][0]; c++) {
-                const char **cur = tos[c];
+        for (c = 0; tosTable[c][0]; c++) {
+                const char **cur = tosTable[c];
                 if (!strcmp(lv, cur[0])) {
                         rets = cur[1];
                 }

@@ -59,6 +59,16 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 				"IP_RECVTTL, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
+		if (setsockopt(fd,
+			       SOL_IP,
+			       IP_RECVTOS,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IP, "
+				"IP_RECVTOS, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
 	}
 	if (addrs->ai_family == AF_INET6) {
 		int on = 1;
@@ -82,11 +92,26 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 				"IPV6_RECVHOPLIMIT, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
+		if (setsockopt(fd,
+			       SOL_IPV6,
+			       IPV6_RECVTCLASS,
+			       &on,
+			       sizeof(on))) {
+			fprintf(stderr,
+				"%s: setsockopt(%d, SOL_IPV6, "
+				"IPV6_RECVTCLASS, on): %s\n",
+				argv0, fd, strerror(errno));
+		}
 	}
 }
 
+/**
+ *
+ */
 static void
-handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
+handleRecvErrSEE(struct sock_extended_err *see,
+                 int returnttl,
+                 const char *tos)
 {
 	int isicmp = 0;
 
@@ -112,9 +137,17 @@ handleRecvErrSEE(struct sock_extended_err *see, int returnttl)
 					      NI_NUMERICHOST))) {
 			fprintf(stderr, "%s: getnameinfo(): %s\n",
 				argv0, gai_strerror(err));
-			printf("From <unknown>: ");
+                        printf("From <unknown>");
+                        if (tos) {
+                                printf("%s", tos);
+                        }
+                        printf(": ");
 		} else {
-			printf("From %s: ", abuf);
+                        printf("From %s", abuf);
+                        if (tos) {
+                                printf("(%s)", tos);
+                        }
+                        printf(": ");
 		}
 	}
 	
@@ -172,6 +205,7 @@ handleRecvErr(int fd, const char *reason)
 	struct iovec iov;
 	int n;
 	int returnttl = -1;
+        char *tos = 0;
 
         /* ignore reason, we know better */
         reason = reason;
@@ -189,12 +223,13 @@ handleRecvErr(int fd, const char *reason)
 	
 	if (0 > (n = recvmsg(fd, &msg, MSG_ERRQUEUE))) {
 		if (errno == EAGAIN) {
-			return;
+                        goto errout;
 		}
 		fprintf(stderr, "%s: recvmsg(%d, ..., MSG_ERRQUEUE): %s\n",
 			argv0, fd, strerror(errno));
-		return;
+                goto errout;
 	}
+        printf("%d %d\n", n, iov.iov_len);
 
 	/* Find ttl */
 	for (cmsg = CMSG_FIRSTHDR(&msg);
@@ -215,11 +250,20 @@ handleRecvErr(int fd, const char *reason)
                 if (cmsg->cmsg_level == SOL_IP
 		    || cmsg->cmsg_level == SOL_IPV6) {
 			switch(cmsg->cmsg_type) {
+                        case IP_TOS:
+                        case IPV6_TCLASS:
+                                free(tos);
+                                tos = malloc(128);
+                                snprintf(tos, 128,
+                                         "ToS %x",
+                                         *(int*)CMSG_DATA(cmsg));
+                                break;
 			case IP_RECVERR:
 			case IPV6_RECVERR:
 				handleRecvErrSEE((struct sock_extended_err*)
 						 CMSG_DATA(cmsg),
-						 returnttl);
+						 returnttl,
+                                                 tos);
 				break;
 			case IP_TTL:
 #if IPV6_HOPLIMIT != REAL_IPV6_HOPLIMIT
@@ -242,5 +286,7 @@ handleRecvErr(int fd, const char *reason)
 
 		}
 	}
+ errout:;
+        free(tos);
 }
 #endif
