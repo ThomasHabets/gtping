@@ -98,13 +98,13 @@
 /* GTP packet as used with GTP Echo */
 #pragma pack(1)
 struct GtpEcho {
-        char flags;
-        char msg;
+        uint8_t flags;
+        uint8_t msg;
         uint16_t len;   
         uint32_t teid;
         uint16_t seq;
-        char npdu;
-        char next;
+        uint8_t npdu;
+        uint8_t next;
 };
 #pragma pack()
 
