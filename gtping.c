@@ -38,16 +38,14 @@
 #include <poll.h>
 #include <math.h>
 #include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/time.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netdb.h>
 
-#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
 #include "getaddrinfo.h"
-#endif
 
 #ifndef SOL_IP
 #define SOL_IP IPPROTO_IP

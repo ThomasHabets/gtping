@@ -26,7 +26,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef HAVE_GETADDRINFO
+#if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
 
 #ifndef GETADDRINFO_H
 #define GETADDRINFO_H
