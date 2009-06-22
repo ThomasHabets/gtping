@@ -177,16 +177,38 @@ static struct Options options = {
         af: AF_UNSPEC, /* -4 or -6 */
 };
 
-static double gettimeofday_dbl();
+/**
+ *
+ */
+static double
+tv2dbl(const struct timeval *tv)
+{
+        return tv->tv_sec + tv->tv_usec / 1000000.0;
+}
 
 /**
  *
  */
+static double
+gettimeofday_dbl()
+{
+	struct timeval tv;
+        if (gettimeofday(&tv, NULL)) {
+		fprintf(stderr,"%s: gettimeofday(): %s\n",
+			argv0,strerror(errno));
+		return time(0);
+	}
+	return tv2dbl(&tv);
+}
+
+/**
+ * callback function for SIGINT. Will terminate the mainloop.
+ */
 static void
 sigint(int unused)
 {
-	unused = unused;
-	sigintReceived = 1; /* timet ot die */
+	unused = unused; /* silence warning */
+	sigintReceived = 1;
 }
 
 /**
@@ -756,30 +778,6 @@ recvEchoReply(int fd)
                 dups++;
         }
 	return isDup;
-}
-
-/**
- *
- */
-static double
-tv2dbl(const struct timeval *tv)
-{
-        return tv->tv_sec + tv->tv_usec / 1000000.0;
-}
-
-/**
- *
- */
-static double
-gettimeofday_dbl()
-{
-	struct timeval tv;
-        if (gettimeofday(&tv, NULL)) {
-		fprintf(stderr,"%s: gettimeofday(): %s\n",
-			argv0,strerror(errno));
-		return time(0);
-	}
-	return tv2dbl(&tv);
 }
 
 /**
