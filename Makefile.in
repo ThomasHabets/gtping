@@ -51,7 +51,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man8dir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_gtping_OBJECTS = gtping.$(OBJEXT)
+am_gtping_OBJECTS = gtping.$(OBJEXT) ei_linux.$(OBJEXT) \
+	ei_other.$(OBJEXT)
 gtping_OBJECTS = $(am_gtping_OBJECTS)
 gtping_LDADD = $(LDADD)
 gtping_DEPENDENCIES = $(LIBOBJS)
@@ -168,8 +169,9 @@ top_srcdir = @top_srcdir@
 
 # Don't complain about "missing" standard GNU files
 AUTOMAKE_OPTIONS = foreign
+AM_CFLAGS = -Wall
 man_MANS = gtping.8
-gtping_SOURCES = gtping.c
+gtping_SOURCES = gtping.c ei_linux.c ei_other.c
 LDADD = $(LIBOBJS)
 GIT = git
 GPG = gpg
@@ -265,6 +267,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/getaddrinfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/memset.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_linux.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_other.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtping.Po@am__quote@
 
 .c.o:

@@ -26,14 +26,14 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #if !defined(HAVE_GETADDRINFO) || !defined(HAVE_GETNAMEINFO)
 
 #ifndef GETADDRINFO_H
 #define GETADDRINFO_H
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <sys/types.h>
 #include <sys/socket.h>

@@ -2,10 +2,11 @@
 
 # Don't complain about "missing" standard GNU files
 AUTOMAKE_OPTIONS = foreign
+AM_CFLAGS=-Wall
 
 bin_PROGRAMS = gtping
 man_MANS = gtping.8
-gtping_SOURCES = gtping.c
+gtping_SOURCES = gtping.c ei_linux.c ei_other.c
 LDADD = $(LIBOBJS)
 
 GIT=git
