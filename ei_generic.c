@@ -1,18 +1,18 @@
-/** gtping/ei_other.c
+/** gtping/ei_generic.c
+ *
+ *  By Thomas Habets <thomas@habets.pp.se> 2009
  *
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#ifdef __linux__
-/* ei_linux.c */
-#else
-
 #include <stdio.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include "gtping.h"
 
 #include "getaddrinfo.h"
 
@@ -38,4 +38,3 @@ handleRecvErr(int fd, const char *reason)
                        "(closed, filtered or TTL exceeded)\n");
         }
 }
-#endif

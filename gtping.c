@@ -59,19 +59,6 @@
 #define SOL_IPV6 IPPROTO_IPV6
 #endif
 
-
-/**
- * In-depth error handling only implemented for linux so far
- */
-#ifdef __linux__
-# define ERR_INSPECTION 1
-#else
-# define ERR_INSPECTION 0
-#endif
-#if ERR_INSPECTION
-extern unsigned int icmpError;
-#endif
-
 /* pings older than TRACKPINGS_SIZE * the_wait_time are ignored.
  * They are old and are considered lost.
  */
@@ -488,7 +475,7 @@ sendEcho(int fd, int seq)
  * For a given tos number, find the tos name.
  * Output is written to buffer of length buflen (incl null terminator).
  */
-static const char*
+const char*
 tos2String(int tos, char *buf, size_t buflen)
 {
         int c;
@@ -718,8 +705,7 @@ mainloop(int fd)
                 timewait *= 0.5; /* leave room for overhead */
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
-                        /* FIXME: why depend or ERR_INSPECTION here? */
-			if ((fds.revents & POLLERR) && ERR_INSPECTION) {
+			if (fds.revents & POLLERR) {
 				handleRecvErr(fd, NULL);
 			}
 			if (fds.revents & POLLIN) {
@@ -762,19 +748,15 @@ mainloop(int fd)
                "%d%% packet loss, "
                "time %dms\n"
                "%u out of order, %u dups, "
-#if ERR_INSPECTION
-               "%u ICMP error, "
-#endif
-               "%u connection refused\n",
+               "%u connection refused",
 	       options.target,
                sent, recvd,
 	       (int)((100.0*(sent-recvd))/sent),
                (int)(1000*(gettimeofday_dbl()-startTime)),
                reorder, dups,
-#if ERR_INSPECTION
-               icmpError,
-#endif
                connectionRefused);
+        errInspectionPrintSummary();
+        printf("\n");
 	if (totalTimeCount) {
 		printf("rtt min/avg/max/mdev = %.3f/%.3f/%.3f/%.3f ms",
 		       1000*totalMin,

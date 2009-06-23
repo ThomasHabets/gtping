@@ -1,9 +1,13 @@
-/** gtping/ei_linux.c
- * linux-style messages
+/** gtping/ei_errqueue.c
+ *
+ *  By Thomas Habets <thomas@habets.pp.se> 2009
+ *
+ * Handle 
+ *
+ * Systems known to use this code: Linux, FreeBSD
+ *
+ * FreeBSD doesn't seem to have IP_RECVTOS or equivalent, so just TTL.
  */
-
-#ifdef __linux__
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,24 +22,27 @@
 
 #include "gtping.h"
 
-/* */
-#define __u8 unsigned char
-#define __u32 unsigned int
-#include <linux/errqueue.h>
-#undef __u8
-#undef __u32
+/* linux-specific stuff */
+#ifdef __linux__
+# define __u8 uint8_t
+# define __u32 uint32_t
+# include <linux/errqueue.h>
+# undef __u8
+# undef __u32
+ /* Sometimes these constants are wrong in the headers, so we check both the
+  * ones in the header files and the ones I found are correct.
+  * from /usr/include/linux/in6.h */
+# define REAL_IPV6_RECVHOPLIMIT       51
+# define REAL_IPV6_HOPLIMIT           52
+#endif
 
-/**
- * Sometimes these constants are wrong in the headers, so we check both the
- * ones in the header files and the ones I found are correct.
- */
-/* from /usr/include/linux/in6.h */
-#define REAL_IPV6_RECVHOPLIMIT       51
-#define REAL_IPV6_HOPLIMIT           52
+static unsigned int icmpError = 0;
 
-extern const char *argv0;
-
-unsigned int icmpError = 0;
+void
+errInspectionPrintSummary()
+{
+        printf(", %u ICMP error", icmpError);
+}
 
 /**
  *
@@ -112,13 +119,13 @@ handleRecvErrSEE(struct sock_extended_err *see,
 				argv0, gai_strerror(err));
                         printf("From <unknown>");
                         if (tos) {
-                                printf("%s", tos);
+                                printf(" %s", tos);
                         }
                         printf(": ");
 		} else {
                         printf("From %s", abuf);
                         if (tos) {
-                                printf("(%s)", tos);
+                                printf(" %s", tos);
                         }
                         printf(": ");
 		}
@@ -202,7 +209,6 @@ handleRecvErr(int fd, const char *reason)
 			argv0, fd, strerror(errno));
                 goto errout;
 	}
-        printf("%d %d\n", n, iov.iov_len);
 
 	/* Find ttl */
 	for (cmsg = CMSG_FIRSTHDR(&msg);
@@ -224,13 +230,18 @@ handleRecvErr(int fd, const char *reason)
 		    || cmsg->cmsg_level == SOL_IPV6) {
 			switch(cmsg->cmsg_type) {
                         case IP_TOS:
-                        case IPV6_TCLASS:
+                        case IPV6_TCLASS: {
+                                char scratch[128];
                                 free(tos);
                                 tos = malloc(128);
                                 snprintf(tos, 128,
-                                         "ToS %x",
-                                         *(int*)CMSG_DATA(cmsg));
+                                         "ToS=%s",
+                                         tos2String(*(unsigned char*)
+                                                    CMSG_DATA(cmsg),
+                                                    scratch,
+                                                    sizeof(scratch)));
                                 break;
+                        }
 			case IP_RECVERR:
 			case IPV6_RECVERR:
 				handleRecvErrSEE((struct sock_extended_err*)
@@ -262,4 +273,4 @@ handleRecvErr(int fd, const char *reason)
  errout:;
         free(tos);
 }
-#endif
+
