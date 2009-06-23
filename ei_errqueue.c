@@ -2,11 +2,10 @@
  *
  *  By Thomas Habets <thomas@habets.pp.se> 2009
  *
- * Handle 
+ * Handle icmp errors delivered via recvmsg() with MSG_ERRQUEUE.
  *
- * Systems known to use this code: Linux, FreeBSD
+ * Systems known to use this code: Linux
  *
- * FreeBSD doesn't seem to have IP_RECVTOS or equivalent, so just TTL.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -273,4 +272,3 @@ handleRecvErr(int fd, const char *reason)
  errout:;
         free(tos);
 }
-

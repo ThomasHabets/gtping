@@ -2,6 +2,8 @@
  *
  *  By Thomas Habets <thomas@habets.pp.se> 2009
  *
+ * Without MSG_ERRQUEUE we don't know the details of what happened, so not
+ * much is extracted in this file.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
