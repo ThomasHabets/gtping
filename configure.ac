@@ -51,6 +51,37 @@ if test "$ac_cv_func_getaddrinfo$ac_cv_func_getnameinfo" != yesyes ; then
    AC_LIBOBJ(getaddrinfo)
 fi
 
+
+# struct msghdr has msg_control
+# (4.4BSD, as opposed to 4.3BSD that has accrights)
+AC_CACHE_CHECK([for msg_control field in struct msghdr],
+                                  ac_cv_have_control_in_msghdr, [
+                                  AC_TRY_RUN(
+                                        [
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+int main() {
+#ifdef msg_control
+exit(1);
+#endif
+struct msghdr m;
+m.msg_control = 0;
+m.msg_controllen = 0;
+exit(0);
+}
+                ],
+                        [ ac_cv_have_control_in_msghdr="yes" ],
+                          [ ac_cv_have_control_in_msghdr="no" ]
+                          )
+])
+AM_CONDITIONAL(HAVE_CONTROL_IN_MSGHDR,
+               test x$ac_cv_have_control_in_msghdr = xyes)
+#if test "x$" = "xyes" ; then
+#   AC_DEFINE([HAVE_CONTROL_IN_MSGHDR], [], [msghdr.msg_control exists])
+#fi
+
+
 # Output
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

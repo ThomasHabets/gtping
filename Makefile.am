@@ -7,6 +7,12 @@ AM_CFLAGS=-Wall
 bin_PROGRAMS = gtping
 man_MANS = gtping.8
 gtping_SOURCES = gtping.c ei_linux.c ei_other.c
+if HAVE_CONTROL_IN_MSGHDR
+gtping_SOURCES += dorecv_cmsg.c
+else
+gtping_SOURCES += dorecv_generic.c
+endif
+
 LDADD = $(LIBOBJS)
 
 GIT=git

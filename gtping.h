@@ -1,3 +1,10 @@
+#include <stdint.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include "getaddrinfo.h"
+
 /**
  * options
  */
@@ -23,6 +30,8 @@ struct Options {
 
 extern struct Options options;
 extern const char *argv0;
+
+ssize_t doRecv(int sock, void *data, size_t len, int *ttl, int *tos);
 
 void errInspectionInit(int fd, const struct addrinfo *addrs);
 void handleRecvErr(int fd, const char *reason);

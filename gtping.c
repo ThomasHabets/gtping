@@ -485,64 +485,6 @@ sendEcho(int fd, int seq)
 }
 
 /**
- *
- */
-ssize_t
-doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
-{
-        struct msghdr msgh;
-        struct cmsghdr *cmsg;
-        struct iovec iov;
-        char msgcontrol[10000];
-        ssize_t n;
-
-        memset(&iov, 0, sizeof(iov));
-        iov.iov_base = data;
-        iov.iov_len = len;
-
-        memset(&msgh, 0, sizeof(msgh));
-        
-        msgh.msg_iov = &iov;
-        msgh.msg_iovlen = 1;
-        msgh.msg_control = msgcontrol;
-        msgh.msg_controllen = sizeof(msgcontrol);
-
-        n = recvmsg(sock, &msgh, MSG_WAITALL);
-        for (cmsg = CMSG_FIRSTHDR(&msgh);
-             cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&msgh,cmsg)) {
-                if (cmsg->cmsg_level == SOL_IP
-                    || cmsg->cmsg_level == SOL_IPV6) {
-                        switch(cmsg->cmsg_type) {
-                        case IP_TOS:
-#ifdef IP_RECVTOS
-                        case IP_RECVTOS:
-#endif
-                        case IPV6_TCLASS:
-                        case IPV6_RECVTCLASS:
-                                if (tos) {
-                                        *tos=*(unsigned char*)CMSG_DATA(cmsg);
-                                }
-                                break;
-                        case IP_TTL:
-                        case IP_RECVTTL:
-                        case IPV6_HOPLIMIT:
-                        case IPV6_RECVHOPLIMIT:
-                                if (ttl) {
-                                        *ttl=*(unsigned char*)CMSG_DATA(cmsg);
-                                }
-                                break;
-                        default:
-                                fprintf(stderr,
-                                        "%s: Unknown cmsg: %d\n",
-                                        argv0, cmsg->cmsg_type);
-                        }
-                }
-        }
-        return n;
-}
-
-/**
  * For a given tos number, find the tos name.
  * Output is written to buffer of length buflen (incl null terminator).
  */
@@ -612,8 +554,8 @@ recvEchoReply(int fd)
 	char lag[128];
         int isDup = 0;
         int isReorder = 0;
-        int ttl = -1;
-        int tos = -1;
+        int ttl;
+        int tos;
         const char *tosString = 0;
         const char *ttlString = 0;
 
