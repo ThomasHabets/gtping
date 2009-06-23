@@ -72,14 +72,31 @@ exit(0);
 }
                 ],
                         [ ac_cv_have_control_in_msghdr="yes" ],
-                          [ ac_cv_have_control_in_msghdr="no" ]
+                        [ ac_cv_have_control_in_msghdr="no" ]
                           )
 ])
 AM_CONDITIONAL(HAVE_CONTROL_IN_MSGHDR,
                test x$ac_cv_have_control_in_msghdr = xyes)
-#if test "x$" = "xyes" ; then
-#   AC_DEFINE([HAVE_CONTROL_IN_MSGHDR], [], [msghdr.msg_control exists])
-#fi
+
+# has MSG_ERRQUEUE.
+# Only Linux has this as far as I know.
+AC_CACHE_CHECK([for MSG_ERRQUEUE],
+                                  ac_cv_have_msg_errqueue, [
+                                  AC_TRY_RUN(
+                                        [
+#include <sys/types.h>
+#include <sys/socket.h>
+int main() {
+int n;
+n = MSG_ERRQUEUE;
+exit(0);
+}
+                ],
+                        [ ac_cv_have_msg_errqueue="yes" ],
+                        [ ac_cv_have_msg_errqueue="no" ]
+                          )
+])
+AM_CONDITIONAL(HAVE_MSG_ERRQUEUE, test x$ac_cv_have_msg_errqueue = xyes)
 
 
 # Output

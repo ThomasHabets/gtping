@@ -35,6 +35,8 @@ POST_UNINSTALL = :
 bin_PROGRAMS = gtping$(EXEEXT)
 @HAVE_CONTROL_IN_MSGHDR_TRUE@am__append_1 = dorecv_cmsg.c
 @HAVE_CONTROL_IN_MSGHDR_FALSE@am__append_2 = dorecv_generic.c
+@HAVE_MSG_ERRQUEUE_TRUE@am__append_3 = ei_errqueue.c
+@HAVE_MSG_ERRQUEUE_FALSE@am__append_4 = ei_generic.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -53,13 +55,15 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man8dir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__gtping_SOURCES_DIST = gtping.c ei_linux.c ei_other.c dorecv_cmsg.c \
-	dorecv_generic.c
+am__gtping_SOURCES_DIST = gtping.c dorecv_cmsg.c dorecv_generic.c \
+	ei_errqueue.c ei_generic.c
 @HAVE_CONTROL_IN_MSGHDR_TRUE@am__objects_1 = dorecv_cmsg.$(OBJEXT)
 @HAVE_CONTROL_IN_MSGHDR_FALSE@am__objects_2 =  \
 @HAVE_CONTROL_IN_MSGHDR_FALSE@	dorecv_generic.$(OBJEXT)
-am_gtping_OBJECTS = gtping.$(OBJEXT) ei_linux.$(OBJEXT) \
-	ei_other.$(OBJEXT) $(am__objects_1) $(am__objects_2)
+@HAVE_MSG_ERRQUEUE_TRUE@am__objects_3 = ei_errqueue.$(OBJEXT)
+@HAVE_MSG_ERRQUEUE_FALSE@am__objects_4 = ei_generic.$(OBJEXT)
+am_gtping_OBJECTS = gtping.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
+	$(am__objects_3) $(am__objects_4)
 gtping_OBJECTS = $(am_gtping_OBJECTS)
 gtping_LDADD = $(LDADD)
 gtping_DEPENDENCIES = $(LIBOBJS)
@@ -178,8 +182,8 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 AM_CFLAGS = -Wall
 man_MANS = gtping.8
-gtping_SOURCES = gtping.c ei_linux.c ei_other.c $(am__append_1) \
-	$(am__append_2)
+gtping_SOURCES = gtping.c $(am__append_1) $(am__append_2) \
+	$(am__append_3) $(am__append_4)
 LDADD = $(LIBOBJS)
 GIT = git
 GPG = gpg
@@ -277,8 +281,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/memset.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dorecv_cmsg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dorecv_generic.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_linux.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_other.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_errqueue.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_generic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtping.Po@am__quote@
 
 .c.o:

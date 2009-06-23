@@ -699,6 +699,8 @@ EGREP
 LIBOBJS
 HAVE_CONTROL_IN_MSGHDR_TRUE
 HAVE_CONTROL_IN_MSGHDR_FALSE
+HAVE_MSG_ERRQUEUE_TRUE
+HAVE_MSG_ERRQUEUE_FALSE
 LTLIBOBJS'
 ac_subst_files=''
       ac_precious_vars='build_alias
@@ -5765,9 +5767,84 @@ else
   HAVE_CONTROL_IN_MSGHDR_FALSE=
 fi
 
-#if test "x$" = "xyes" ; then
-#   AC_DEFINE([HAVE_CONTROL_IN_MSGHDR], [], [msghdr.msg_control exists])
-#fi
+
+# has MSG_ERRQUEUE.
+# Only Linux has this as far as I know.
+{ echo "$as_me:$LINENO: checking for MSG_ERRQUEUE" >&5
+echo $ECHO_N "checking for MSG_ERRQUEUE... $ECHO_C" >&6; }
+if test "${ac_cv_have_msg_errqueue+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+                                  if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#include <sys/socket.h>
+int main() {
+int n;
+n = MSG_ERRQUEUE;
+exit(0);
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+   ac_cv_have_msg_errqueue="yes"
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+ ac_cv_have_msg_errqueue="no"
+
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_msg_errqueue" >&5
+echo "${ECHO_T}$ac_cv_have_msg_errqueue" >&6; }
+ if test x$ac_cv_have_msg_errqueue = xyes; then
+  HAVE_MSG_ERRQUEUE_TRUE=
+  HAVE_MSG_ERRQUEUE_FALSE='#'
+else
+  HAVE_MSG_ERRQUEUE_TRUE='#'
+  HAVE_MSG_ERRQUEUE_FALSE=
+fi
+
 
 
 # Output
@@ -5894,6 +5971,13 @@ if test -z "${HAVE_CONTROL_IN_MSGHDR_TRUE}" && test -z "${HAVE_CONTROL_IN_MSGHDR
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_CONTROL_IN_MSGHDR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"HAVE_CONTROL_IN_MSGHDR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_MSG_ERRQUEUE_TRUE}" && test -z "${HAVE_MSG_ERRQUEUE_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_MSG_ERRQUEUE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_MSG_ERRQUEUE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -6513,10 +6597,12 @@ EGREP!$EGREP$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 HAVE_CONTROL_IN_MSGHDR_TRUE!$HAVE_CONTROL_IN_MSGHDR_TRUE$ac_delim
 HAVE_CONTROL_IN_MSGHDR_FALSE!$HAVE_CONTROL_IN_MSGHDR_FALSE$ac_delim
+HAVE_MSG_ERRQUEUE_TRUE!$HAVE_MSG_ERRQUEUE_TRUE$ac_delim
+HAVE_MSG_ERRQUEUE_FALSE!$HAVE_MSG_ERRQUEUE_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 85; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
