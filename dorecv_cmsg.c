@@ -41,6 +41,10 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
         char msgcontrol[10000];
         ssize_t n;
 
+	if (options.verbose > 2) {
+		fprintf(stderr, "%s: doRecv[cmsg]()\n", argv0);
+	}
+
         *ttl = -1;
         *tos = -1;
 
@@ -56,8 +60,9 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
         msgh.msg_controllen = sizeof(msgcontrol);
 
         n = recvmsg(sock, &msgh, MSG_WAITALL);
+
         for (cmsg = CMSG_FIRSTHDR(&msgh);
-             cmsg != NULL;
+             (0 < n) && (cmsg != NULL);
              cmsg = CMSG_NXTHDR(&msgh,cmsg)) {
                 if (cmsg->cmsg_level == SOL_IP
                     || cmsg->cmsg_level == SOL_IPV6) {
@@ -87,5 +92,10 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
                         }
                 }
         }
+
+	if (options.verbose > 2) {
+		fprintf(stderr, "%s: doRecv[cmsg]() = %d\n", argv0, n);
+	}
+
         return n;
 }
