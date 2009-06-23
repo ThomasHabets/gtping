@@ -30,6 +30,14 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
  *
  */
 void
+errInspectionPrintSummary()
+{
+}
+
+/**
+ *
+ */
+void
 handleRecvErr(int fd, const char *reason)
 {
         fd = fd;
