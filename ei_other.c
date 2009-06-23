@@ -1,11 +1,18 @@
 /** gtping/ei_other.c
  *
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #ifdef __linux__
 /* ei_linux.c */
 #else
 
 #include <stdio.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "getaddrinfo.h"
 

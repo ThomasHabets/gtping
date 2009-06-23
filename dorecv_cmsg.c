@@ -7,7 +7,7 @@
  *
  * Systems known to use this code: Linux, FreeBSD
  *
- * FreeBSD doesn't seem to have IP_RECVTOS or equivalent. 
+ * FreeBSD doesn't seem to have IP_RECVTOS or equivalent, so just TTL.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -15,10 +15,19 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include "gtping.h"
+
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
+#ifndef SOL_IPV6
+#define SOL_IPV6 IPPROTO_IPV6
+#endif
 
 /**
  * 
