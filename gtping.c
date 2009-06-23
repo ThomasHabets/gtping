@@ -505,40 +505,6 @@ tos2String(int tos, char *buf, size_t buflen)
 }
 
 /**
- * Allocate and 
- *
- * arbitrary limit: never handle bigger string than about a MB
- */
-static const char*
-allocFormat(const char *fmt, ...)
-{
-        va_list ap;
-        char *ret = 0;
-        size_t size = 64;
-        int n;
-
-        va_start(ap, fmt);
-        
-        do {
-                
-                if (size > 1048576) {
-                        fprintf(stderr,
-                                "%s: allocFormat() error: "
-                                "size just kept getting bigger and bigger\n",
-                                argv0);
-                        return 0;
-                }
-                ret = realloc(0, size);
-
-                n = vsnprintf(ret, size, fmt, ap);
-        } while ((n < 0) || (n > size));
-        
-        va_end(ap);
-
-        return ret;
-}
-
-/**
  * return 0 on success/got reply,
  *        <0 on fail. Errno returned.
  *        >0 on success, but no packet (EINTR or dup packet)
@@ -547,7 +513,6 @@ static int
 recvEchoReply(int fd)
 {
 	int err;
-        int ret = 0;
 	struct GtpEcho gtp;
 	int n;
 	double now;
@@ -556,8 +521,9 @@ recvEchoReply(int fd)
         int isReorder = 0;
         int ttl;
         int tos;
-        const char *tosString = 0;
-        const char *ttlString = 0;
+        char tosString[128] = {0};
+        char ttlString[128] = {0};
+        
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
@@ -575,44 +541,39 @@ recvEchoReply(int fd)
                 case ECONNREFUSED:
                         connectionRefused++;
 			handleRecvErr(fd, "Port closed");
-                        ret = 1;
-                        goto errout;
+                        return 1;
 		case EINTR:
-                        ret = 1;
-                        goto errout;
+                        return 1;
                 case EHOSTUNREACH:
 			handleRecvErr(fd, "Host unreachable or TTL exceeded");
-                        ret = 1;
-                        goto errout;
+                        return 1;
 		default:
 			err = errno;
 			fprintf(stderr, "%s: recv(%d, ...): %s\n",
 				argv0, fd, strerror(errno));
-                        ret = err;
-                        goto errout;
+                        return err;
 		}
 	}
 
         /* create ttl string */
         if (0 <= ttl) {
-                ttlString = allocFormat("ttl=%d ", ttl);
+                snprintf(ttlString, sizeof(ttlString), "ttl=%d ", ttl);
         }
 
         /* create tos string */
         if (0 <= tos) {
                 char scratch[128];
-                tosString = allocFormat("ToS=%s ",
-                                        tos2String(tos,
-                                                   scratch,
-                                                   sizeof(scratch)));
+                snprintf(tosString, sizeof(tosString),
+                         "ToS=%s ", tos2String(tos,
+                                               scratch,
+                                               sizeof(scratch)));
         }
 
         /* check packet size */
         if (n < sizeof(struct GtpEcho)) {
                 fprintf(stderr, "%s: Short packet received: %d < 12\n",
                         argv0, n);
-                ret = 1;
-                goto errout;
+                return 1;
         }
         if (n > sizeof(struct GtpEcho)) {
                 if (options.verbose) {
@@ -625,16 +586,14 @@ recvEchoReply(int fd)
 	/* replies use teid 0 */
 	if (0) {
 		if (gtp.teid != htonl(options.teid)) {
-                        ret = 1;
-                        goto errout;
+                        return 1;
 		}
 	}
 	if (gtp.msg != 0x02) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
 			argv0, gtp.msg);
-                ret = 0;
-                goto errout;
+                return 0;
 	}
 
         if (curSeq - htons(gtp.seq) >= TRACKPINGS_SIZE) {
@@ -687,8 +646,8 @@ recvEchoReply(int fd)
                        n,
                        options.targetip,
                        htons(gtp.seq),
-                       ttlString ? ttlString : "",
-                       tosString ? tosString : "",
+                       ttlString[0] ? ttlString : "",
+                       tosString[0] ? tosString : "",
                        lag,
                        isDup ? " (DUP)" : "",
                        isReorder ? " (out of order)" : "");
@@ -696,11 +655,7 @@ recvEchoReply(int fd)
         if (isDup) {
                 dups++;
         }
-	ret = isDup;
- errout:
-        free((char*)tosString);
-        free((char*)ttlString);
-        return ret;
+	return isDup;
 }
 
 /**

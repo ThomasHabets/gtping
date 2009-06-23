@@ -33,8 +33,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = gtping$(EXEEXT)
-@HAVE_CONTROL_IN_MSGHDR_TRUE@am__append_1 = do_recv_cmsg.c
-@HAVE_CONTROL_IN_MSGHDR_FALSE@am__append_2 = do_recv_generic.c
+@HAVE_CONTROL_IN_MSGHDR_TRUE@am__append_1 = dorecv_cmsg.c
+@HAVE_CONTROL_IN_MSGHDR_FALSE@am__append_2 = dorecv_generic.c
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -53,11 +53,11 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man8dir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__gtping_SOURCES_DIST = gtping.c ei_linux.c ei_other.c \
-	do_recv_cmsg.c do_recv_generic.c
-@HAVE_CONTROL_IN_MSGHDR_TRUE@am__objects_1 = do_recv_cmsg.$(OBJEXT)
+am__gtping_SOURCES_DIST = gtping.c ei_linux.c ei_other.c dorecv_cmsg.c \
+	dorecv_generic.c
+@HAVE_CONTROL_IN_MSGHDR_TRUE@am__objects_1 = dorecv_cmsg.$(OBJEXT)
 @HAVE_CONTROL_IN_MSGHDR_FALSE@am__objects_2 =  \
-@HAVE_CONTROL_IN_MSGHDR_FALSE@	do_recv_generic.$(OBJEXT)
+@HAVE_CONTROL_IN_MSGHDR_FALSE@	dorecv_generic.$(OBJEXT)
 am_gtping_OBJECTS = gtping.$(OBJEXT) ei_linux.$(OBJEXT) \
 	ei_other.$(OBJEXT) $(am__objects_1) $(am__objects_2)
 gtping_OBJECTS = $(am_gtping_OBJECTS)
@@ -275,8 +275,8 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/getaddrinfo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/memset.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/do_recv_cmsg.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/do_recv_generic.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dorecv_cmsg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dorecv_generic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_linux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ei_other.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtping.Po@am__quote@
