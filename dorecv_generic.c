@@ -26,5 +26,5 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
 {
         *ttl = -1;
         *tos = -1;
-        return recvfrom(fd, data, len, 0);
+        return recv(sock, data, len, 0);
 }
