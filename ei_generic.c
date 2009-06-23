@@ -48,3 +48,10 @@ handleRecvErr(int fd, const char *reason)
                        "(closed, filtered or TTL exceeded)\n");
         }
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

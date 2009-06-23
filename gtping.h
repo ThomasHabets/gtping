@@ -42,3 +42,10 @@ void errInspectionPrintSummary();
 void errInspectionInit(int fd, const struct addrinfo *addrs);
 void handleRecvErr(int fd, const char *reason);
 const char *tos2String(int tos, char *buf, size_t buflen);
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

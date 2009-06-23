@@ -272,3 +272,10 @@ handleRecvErr(int fd, const char *reason)
  errout:;
         free(tos);
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

@@ -28,3 +28,10 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
         *tos = -1;
         return recv(sock, data, len, 0);
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */

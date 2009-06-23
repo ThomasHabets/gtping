@@ -99,3 +99,10 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
 
         return n;
 }
+
+/* ---- Emacs Variables ----
+ * Local Variables:
+ * c-basic-offset: 8
+ * indent-tabs-mode: nil
+ * End:
+ */
