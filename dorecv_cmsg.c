@@ -13,6 +13,15 @@
 #include "config.h"
 #endif
 
+/* For Solaris we need some defines */
+#if defined (__SVR4) && defined (__sun)
+/* SUS (XPG4v2) */
+# define _XOPEN_SOURCE
+# define _XOPEN_SOURCE_EXTENDED 1
+/* IPV6_TCLASS needs __EXTENSIONS__ */
+# define __EXTENSIONS__ 1
+#endif
+
 #include <string.h>
 #include <stdio.h>
 #include <netinet/in.h>

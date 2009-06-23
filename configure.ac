@@ -58,6 +58,11 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
                                   ac_cv_have_control_in_msghdr, [
                                   AC_TRY_RUN(
                                         [
+#if defined (__SVR4) && defined (__sun)
+# define _XOPEN_SOURCE
+# define _XOPEN_SOURCE_EXTENDED 1
+# define __EXTENSIONS__ 1
+#endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
