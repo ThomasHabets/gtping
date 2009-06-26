@@ -5,9 +5,10 @@
  * This provides the recv*() wrapper for systems that export ToS and TTL
  * data via msghdr.msg_control
  *
- * Systems known to use this code: Linux, FreeBSD
+ * Systems known to use this code: Linux, FreeBSD, Solaris.
  *
- * FreeBSD doesn't seem to have IP_RECVTOS or equivalent, so just TTL.
+ * FreeBSD and Solaris don't seem to have IP_RECVTOS or equivalent, so
+ * just TTL for them.
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"

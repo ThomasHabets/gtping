@@ -5,7 +5,7 @@
  * This provides the recv*() wrapper for systems that don't seem to export
  * ToS or TTL on a packet-by-packet basis at all.
  *
- * Systems known to use this code: Solaris
+ * Systems known to use this code: 
  */
 #ifdef HAVE_CONFIG_H
 #include "config.h"
