@@ -122,11 +122,17 @@ handleRecvErrSEE(struct sock_extended_err *see,
                         if (tos) {
                                 printf(" %s", tos);
                         }
+                        if (returnttl > 0) {
+                                printf(" ttl=%d", returnttl);
+                        }
                         printf(": ");
 		} else {
                         printf("From %s", abuf);
                         if (tos) {
                                 printf(" %s", tos);
+                        }
+                        if (returnttl > 0) {
+                                printf(" ttl=%d", returnttl);
                         }
                         printf(": ");
 		}
