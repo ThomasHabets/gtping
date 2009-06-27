@@ -37,7 +37,7 @@ errInspectionPrintSummary()
 /**
  *
  */
-void
+int
 handleRecvErr(int fd, const char *reason)
 {
         fd = fd;
@@ -47,6 +47,7 @@ handleRecvErr(int fd, const char *reason)
                 printf("Destination unreachable "
                        "(closed, filtered or TTL exceeded)\n");
         }
+        return 0;
 }
 
 /* ---- Emacs Variables ----

@@ -85,18 +85,20 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 }
 
 /**
- *
+ * return: port was closed or firewalled. In other words: increasing TTL won't
+ *         help.
  */
-static void
+static int
 handleRecvErrSEE(struct sock_extended_err *see,
                  int returnttl,
                  const char *tos)
 {
 	int isicmp = 0;
+        int ret = 0;
 
 	if (!see) {
 		fprintf(stderr, "%s: Error, but no error info\n", argv0);
-		return;
+		return ret;
 	}
 
 	/* print "From ...: */
@@ -139,6 +141,7 @@ handleRecvErrSEE(struct sock_extended_err *see,
 	switch (see->ee_errno) {
 	case ECONNREFUSED:
 		printf("Port closed");
+                ret = 1;
 		break;
 	case EMSGSIZE:
 		printf("PMTU %d", see->ee_info);
@@ -148,15 +151,18 @@ handleRecvErrSEE(struct sock_extended_err *see,
 		break;
 	case ENETUNREACH:
 		printf("Network unreachable");
+                ret = 1;
 		break;
 	case EACCES:
 		printf("Access denied");
+                ret = 1;
 		break;
 	case EHOSTUNREACH:
 		if (isicmp && see->ee_type == 11 && see->ee_code == 0) {
                         printf("Time to live exceeded");
                 } else {
 			printf("Host unreachable");
+                        ret = 1;
 		}
 		break;
 	default:
@@ -168,12 +174,14 @@ handleRecvErrSEE(struct sock_extended_err *see,
 		printf(". return TTL: %d.", returnttl);
 	}
 	printf("\n");
+        return ret;
 }
 
 /**
- *
+ * return: port was closed or firewalled. In other words: increasing TTL won't
+ *         help.
  */
-void
+int
 handleRecvErr(int fd, const char *reason)
 {
 	struct msghdr msg;
@@ -185,6 +193,7 @@ handleRecvErr(int fd, const char *reason)
 	int n;
 	int returnttl = -1;
         char *tos = 0;
+        int ret = 0;
 
         /* ignore reason, we know better */
         reason = reason;
@@ -209,7 +218,7 @@ handleRecvErr(int fd, const char *reason)
                 goto errout;
 	}
 
-	/* Find ttl */
+	/* First find ttl */
 	for (cmsg = CMSG_FIRSTHDR(&msg);
 	     cmsg;
 	     cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -243,10 +252,11 @@ handleRecvErr(int fd, const char *reason)
                         }
 			case IP_RECVERR:
 			case IPV6_RECVERR:
-				handleRecvErrSEE((struct sock_extended_err*)
-						 CMSG_DATA(cmsg),
-						 returnttl,
-                                                 tos);
+                                ret = handleRecvErrSEE((struct
+                                                        sock_extended_err*)
+                                                       CMSG_DATA(cmsg),
+                                                       returnttl,
+                                                       tos);
 				break;
 			case IP_TTL:
 #if IPV6_HOPLIMIT != REAL_IPV6_HOPLIMIT
@@ -271,6 +281,7 @@ handleRecvErr(int fd, const char *reason)
 	}
  errout:;
         free(tos);
+        return ret;
 }
 
 /* ---- Emacs Variables ----

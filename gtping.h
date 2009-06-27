@@ -41,7 +41,7 @@ ssize_t doRecv(int sock, void *data, size_t len, int *ttl, int *tos);
 
 void errInspectionPrintSummary();
 void errInspectionInit(int fd, const struct addrinfo *addrs);
-void handleRecvErr(int fd, const char *reason);
+int handleRecvErr(int fd, const char *reason);
 const char *tos2String(int tos, char *buf, size_t buflen);
 
 /* ---- Emacs Variables ----
