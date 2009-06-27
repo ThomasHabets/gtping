@@ -85,13 +85,16 @@ errInspectionInit(int fd, const struct addrinfo *addrs)
 }
 
 /**
- * return: port was closed or firewalled. In other words: increasing TTL won't
- *         help.
+ * return:
+ *      0 if no error
+ *      1 if TTL exceeded
+ *     >1 if other icmp-like error
  */
 static int
 handleRecvErrSEE(struct sock_extended_err *see,
                  int returnttl,
-                 const char *tos)
+                 const char *tos,
+                 double lastPingTime)
 {
 	int isicmp = 0;
         int ret = 0;
@@ -134,6 +137,10 @@ handleRecvErrSEE(struct sock_extended_err *see,
                         if (returnttl > 0) {
                                 printf(" ttl=%d", returnttl);
                         }
+                        if (lastPingTime) {
+                                printf(" time=%.2f ms",
+                                       1000*(gettimeofday_dbl()-lastPingTime));
+                        }
                         printf(": ");
 		}
 	}
@@ -147,32 +154,36 @@ handleRecvErrSEE(struct sock_extended_err *see,
 	switch (see->ee_errno) {
 	case ECONNREFUSED:
 		printf("Port closed");
-                ret = 1;
+                ret = 2;
 		break;
 	case EMSGSIZE:
 		printf("PMTU %d", see->ee_info);
+                ret = 2;
 		break;
 	case EPROTO:
 		printf("Protocol error");
+                ret = 2;
 		break;
 	case ENETUNREACH:
 		printf("Network unreachable");
-                ret = 1;
+                ret = 2;
 		break;
 	case EACCES:
 		printf("Access denied");
-                ret = 1;
+                ret = 2;
 		break;
 	case EHOSTUNREACH:
 		if (isicmp && see->ee_type == 11 && see->ee_code == 0) {
                         printf("Time to live exceeded");
+                        ret = 1;
                 } else {
 			printf("Host unreachable");
-                        ret = 1;
+                        ret = 2;
 		}
 		break;
 	default:
 		printf("%s", strerror(see->ee_errno));
+                ret = 2;
 		break;
 	}
         icmpError++;
@@ -184,11 +195,13 @@ handleRecvErrSEE(struct sock_extended_err *see,
 }
 
 /**
- * return: port was closed or firewalled. In other words: increasing TTL won't
- *         help.
+ * return:
+ *      0 if no error
+ *      1 if TTL exceeded
+ *     >1 if other icmp-like error
  */
 int
-handleRecvErr(int fd, const char *reason)
+handleRecvErr(int fd, const char *reason, double lastPingTime)
 {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -262,7 +275,8 @@ handleRecvErr(int fd, const char *reason)
                                                         sock_extended_err*)
                                                        CMSG_DATA(cmsg),
                                                        returnttl,
-                                                       tos);
+                                                       tos,
+                                                       lastPingTime);
 				break;
 			case IP_TTL:
 #if IPV6_HOPLIMIT != REAL_IPV6_HOPLIMIT

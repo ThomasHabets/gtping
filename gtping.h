@@ -18,6 +18,7 @@
 #define DEFAULT_VERBOSE 0
 #define DEFAULT_INTERVAL 1.0
 #define DEFAULT_WAIT 10.0
+#define DEFAULT_TRACEROUTEHOPS 3
 struct Options {
         const char *port;
         int verbose;
@@ -32,6 +33,8 @@ struct Options {
         int ttl;
         int tos;
         int af;
+        int traceroute;
+        int traceroutehops;
 };
 
 extern struct Options options;
@@ -41,8 +44,9 @@ ssize_t doRecv(int sock, void *data, size_t len, int *ttl, int *tos);
 
 void errInspectionPrintSummary();
 void errInspectionInit(int fd, const struct addrinfo *addrs);
-int handleRecvErr(int fd, const char *reason);
+int handleRecvErr(int fd, const char *reason, double lastPingTime);
 const char *tos2String(int tos, char *buf, size_t buflen);
+double gettimeofday_dbl();
 
 /* ---- Emacs Variables ----
  * Local Variables:

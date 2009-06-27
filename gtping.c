@@ -122,6 +122,10 @@ struct Options options = {
         tos: -1,       /* -Q <dscp> */
         teid: 0,       /* -t <teid> */
         af: AF_UNSPEC, /* -4 or -6 */
+
+        traceroute: 0, /* -r */
+        traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r [<# per hop>] */
+        
 };
 
 static const char *tosTable[][2] = {
@@ -164,7 +168,7 @@ tv2dbl(const struct timeval *tv)
 /**
  *
  */
-static double
+double
 gettimeofday_dbl()
 {
 	struct timeval tv;
@@ -527,12 +531,13 @@ recvEchoReply(int fd)
 		switch(errno) {
                 case ECONNREFUSED:
                         connectionRefused++;
-			handleRecvErr(fd, "Port closed");
+			handleRecvErr(fd, "Port closed", 0);
                         return 1;
 		case EINTR:
                         return 1;
                 case EHOSTUNREACH:
-			handleRecvErr(fd, "Host unreachable or TTL exceeded");
+			handleRecvErr(fd, "Host unreachable or TTL exceeded",
+                                      0);
                         return 1;
 		default:
 			err = errno;
@@ -646,6 +651,130 @@ recvEchoReply(int fd)
 }
 
 /**
+ * FIXME: this function needs a cleanup, and probably some merging
+ * with mainloop()
+ */
+static int
+traceroute(int fd)
+{
+        int ttl = 0;
+        int ttlTry = 0;
+        double curPingTime;
+        double lastRecvTime = 0;
+        double lastPingTime = 0;
+        int n;
+        int endOfTraceroute = 0;
+        int printStar = 0;
+        double timewait;
+
+	printf("GTPING traceroute to %s (%s) %u bytes of data.\n",
+	       options.target,
+	       options.targetip,
+	       (int)sizeof(struct GtpEcho));
+
+
+	while (!sigintReceived) {
+		struct pollfd fds;
+
+		fds.fd = fd;
+		fds.events = POLLIN;
+		fds.revents = 0;
+                
+                /* time to send yet? */
+		curPingTime = gettimeofday_dbl();
+		if ((lastRecvTime >= lastPingTime)
+                    || (curPingTime > lastPingTime + options.interval)) {
+                        if (printStar) {
+                                printf("*\n");
+                        }
+                        ttlTry++;
+                        if (ttlTry < options.traceroutehops && ttl != 0) {
+                                printf("     ");
+                        } else {
+                                if (endOfTraceroute) {
+                                        break;
+                                }
+                                ttl++;
+                                ttlTry = 0;
+                                printf("%4d ", ttl);
+                                fflush(stdout);
+                        }
+                        if (setsockopt(fd,
+                                       SOL_IP,
+                                       IP_TTL,
+                                       &ttl,
+                                       sizeof(ttl))) {
+                                fprintf(stderr,
+                                        "%s: setsockopt(%d, SOL_IP, IP_TTL, "
+                                        "%d): %s\n", argv0, fd, ttl,
+                                        strerror(errno));
+                        }
+
+                        if (0 <= sendEcho(fd, curSeq++)) {
+                                lastPingTime = curPingTime;
+                                printStar = 1;
+                        }
+                }
+
+                /* max waittime: until it's time to send the next one */
+		timewait = (lastPingTime+options.interval) -gettimeofday_dbl();
+		if (timewait < 0) {
+			timewait = 0;
+		}
+                timewait *= 0.5; /* leave room for overhead */
+
+		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
+		case 1: /* read ready */
+                        printStar = 0;
+			if (fds.revents & POLLERR) {
+                                int e;
+				e = handleRecvErr(fd, NULL, lastPingTime);
+                                if (e) {
+                                        lastRecvTime = gettimeofday_dbl();
+                                }
+                                if (e > 1) {
+                                        endOfTraceroute = 1;
+                                }
+			}
+			if (fds.revents & POLLIN) {
+				n = recvEchoReply(fd);
+                                endOfTraceroute = 1;
+                                if (!n) {
+                                        lastRecvTime = gettimeofday_dbl();
+                                } else if (n > 0) {
+                                        /* still ok, but no reply */
+                                        printStar = 1;
+                                } else {
+                                        return 1;
+                                }
+			}
+			break;
+		case 0: /* timeout */
+			break;
+		case -1: /* error */
+			switch (errno) {
+			case EINTR:
+			case EAGAIN:
+				break;
+			default:
+				fprintf(stderr, "%s: poll([%d], 1, %d): %s\n",
+					argv0,
+					fd,
+					(int)(timewait*1000),
+					strerror(errno));
+				exit(2);
+			}
+			break;
+		default: /* can't happen */
+			fprintf(stderr, "%s: poll() returned %d!\n", argv0, n);
+			exit(2);
+			break;
+		}
+        }
+        return 0;
+}
+
+/**
  * return value is sent directly to return value of main()
  */
 static int
@@ -684,8 +813,8 @@ mainloop(int fd)
                                         break;
                                 }
 			} else if (0 <= sendEcho(fd, curSeq++)) {
-				sent++;
-				lastpingTime = curPingTime;
+                                sent++;
+                                lastpingTime = curPingTime;
                                 if (options.flood) {
                                         printf(".");
                                         fflush(stdout);
@@ -706,7 +835,7 @@ mainloop(int fd)
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR) {
-				handleRecvErr(fd, NULL);
+				handleRecvErr(fd, NULL, 0);
 			}
 			if (fds.revents & POLLIN) {
 				n = recvEchoReply(fd);
@@ -806,9 +935,10 @@ usage(int err)
                "[ -i <time> ] "
                "\n       %s "
                "[ -p <port> ] "
+               "[ -r[<perhop>] ] "
                "[ -t <teid> ] "
-               "[ -T <ttl> ] "
                "\n       %s "
+               "[ -T <ttl> ] "
                "[ -w <time> ] "
                "<target>\n"
                "\t-4               Force IPv4 (default: auto-detect)\n"
@@ -821,6 +951,10 @@ usage(int err)
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
                "\t-Q <dscp>        Set ToS/DSCP bit (default: don't set)\n"
                "\t                 Examples: ef, af21, 0xb8, lowdelay\n"
+               "\t-r[<perhop>]     Traceroute. Number of pings per TTL "
+               "(default: %d)\n"
+               "\t                 Traceroute will only work correctly "
+               "on Linux.\n"
                "\t-t <teid>        Transaction ID (default: 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
@@ -834,7 +968,8 @@ usage(int err)
                argv0,
                argv0lenSpaces(),
                argv0lenSpaces(),
-               DEFAULT_INTERVAL, DEFAULT_PORT, DEFAULT_VERBOSE, DEFAULT_WAIT);
+               DEFAULT_INTERVAL, DEFAULT_PORT, DEFAULT_TRACEROUTEHOPS,
+               DEFAULT_VERBOSE, DEFAULT_WAIT);
         exit(err);
 }
 
@@ -962,7 +1097,7 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c = getopt(argc,argv,"46c:fhi:p:Q:t:T:vVw:"))) {
+		while (-1 != (c=getopt(argc,argv,"46c:fhi:p:Q:r::t:T:vVw:"))) {
 			switch(c) {
                         case '4':
                                 options.af = AF_INET;
@@ -1022,6 +1157,12 @@ main(int argc, char **argv)
                                                 argv0);
                                 }
                                 break;
+                        case 'r':
+                                options.traceroute = 1;
+                                if (optarg) {
+                                        options.traceroutehops = atoi(optarg);
+                                }
+                                break;
 			case '?':
 			default:
 				usage(2);
@@ -1060,8 +1201,11 @@ main(int argc, char **argv)
 	if (0 > (fd = setupSocket())) {
 		return 1;
 	}
-
-	return mainloop(fd);
+        if (options.traceroute) {
+                return traceroute(fd);
+        } else {
+                return mainloop(fd);
+        }
 }
 
 /* ---- Emacs Variables ----

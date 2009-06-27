@@ -35,7 +35,10 @@ errInspectionPrintSummary()
 }
 
 /**
- *
+ * return:
+ *      0 if no error
+ *      1 if TTL exceeded
+ *     >1 if other icmp-like error
  */
 int
 handleRecvErr(int fd, const char *reason)
