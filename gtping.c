@@ -672,8 +672,8 @@ recvEchoReply(int fd)
                        n,
                        options.targetip,
                        htons(gtp.seq),
-                       ttlString[0] ? ttlString : "",
                        tosString[0] ? tosString : "",
+                       ttlString[0] ? ttlString : "",
                        lag,
                        isDup ? " (DUP)" : "",
                        isReorder ? " (out of order)" : "");
