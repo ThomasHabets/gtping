@@ -124,7 +124,7 @@ struct Options options = {
         af: AF_UNSPEC, /* -4 or -6 */
 
         traceroute: 0, /* -r */
-        traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r [<# per hop>] */
+        traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r[<# per hop>] */
         
 };
 
@@ -158,7 +158,7 @@ static const char *tosTable[][2] = {
 };
 
 /**
- *
+ * convert struct timeval to double
  */
 static double
 tv2dbl(const struct timeval *tv)
@@ -167,7 +167,7 @@ tv2dbl(const struct timeval *tv)
 }
 
 /**
- *
+ * get seconds since 1970 including fractional seconds
  */
 double
 gettimeofday_dbl()
@@ -492,7 +492,7 @@ tos2String(int tos, char *buf, size_t buflen)
                         return buf;
                 }
         }
-        snprintf(buf, buflen, "%.2x", tos);
+        snprintf(buf, buflen, "0x%.2x", tos);
         return buf;
 }
 
@@ -653,10 +653,10 @@ recvEchoReply(int fd)
 
 /**
  * FIXME: this function needs a cleanup, and probably some merging
- * with mainloop()
+ * with pingMainloop()
  */
 static int
-traceroute(int fd)
+tracerouteMainloop(int fd)
 {
         int ttl = 0;
         int ttlTry = 0;
@@ -779,7 +779,7 @@ traceroute(int fd)
  * return value is sent directly to return value of main()
  */
 static int
-mainloop(int fd)
+pingMainloop(int fd)
 {
 	unsigned sent = 0;
 	unsigned recvd = 0;
@@ -991,11 +991,10 @@ printVersion()
 
 
 /**
- *
  * return -1 on error, or 8bit number to put in IP ToS-field.
  */
 static int
-parseQos(const char *instr)
+string2Tos(const char *instr)
 {
         char *lv;
         const char *rets = NULL;
@@ -1072,7 +1071,6 @@ main(int argc, char **argv)
         { /* handle GNU options */
                 int c;
                 for (c = 1; c < argc; c++) {
-                        
                         if (!strcmp(argv[c], "--")) {
                                 break;
                         } else if (!strcmp(argv[c], "--help")) {
@@ -1147,7 +1145,7 @@ main(int argc, char **argv)
 				options.wait = atof(optarg);
 				break;
                         case 'Q':
-                                if (-1 == (options.tos = parseQos(optarg))) {
+                                if (-1 == (options.tos = string2Tos(optarg))) {
                                         fprintf(stderr,
                                                 "%s: invalid ToS/DSCP \"%s\", "
                                                 "left as-is.\n", argv0,optarg);
@@ -1203,9 +1201,9 @@ main(int argc, char **argv)
 		return 1;
 	}
         if (options.traceroute) {
-                return traceroute(fd);
+                return tracerouteMainloop(fd);
         } else {
-                return mainloop(fd);
+                return pingMainloop(fd);
         }
 }
 
