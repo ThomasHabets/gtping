@@ -819,6 +819,7 @@ pingMainloop(int fd)
 	double lastpingTime = 0; /* last time we sent out a ping */
 	double curPingTime;   /* if we ping now, this is the timestamp of it */
         double lastRecvTime = 0; /* last time we got a reply */
+        int recvErrors = 0;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
@@ -838,6 +839,15 @@ pingMainloop(int fd)
 		double timewait;
 		int n;
 		struct pollfd fds;
+
+                /* sent all we are going to send, and got all replies
+                 * (either errors or good replies)
+                 */
+                if (options.count
+                    && (sent == options.count)
+                    && (sent == (recvd + recvErrors))) {
+                        break;
+                }
 
                 /* time to send yet? */
 		curPingTime = gettimeofday_dbl();
@@ -869,7 +879,9 @@ pingMainloop(int fd)
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR) {
-				handleRecvErr(fd, NULL, 0);
+                                if (handleRecvErr(fd, NULL, 0)) {
+                                        recvErrors++;
+                                }
 			}
 			if (fds.revents & POLLIN) {
 				n = recvEchoReply(fd);
@@ -878,7 +890,7 @@ pingMainloop(int fd)
                                         lastRecvTime = gettimeofday_dbl();
                                 } else if (n > 0) {
                                         /* still ok, but no reply */
-                                } else {
+                                } else { /* n < 0 */
                                         return 1;
                                 }
 			}
