@@ -128,7 +128,7 @@ struct Options options = {
         
 };
 
-static const char *tosTable[][2] = {
+static const char *dscpTable[][2] = {
         /* dscp values */
         {"ef",   "184"}, {"be",     "0"}, {"de",     "0"},
         {"af11",  "40"}, {"af12",  "48"}, {"af13",  "56"},
@@ -138,12 +138,17 @@ static const char *tosTable[][2] = {
         {"cs0",    "0"}, {"cs1",   "32"}, {"cs2",   "64"},
         {"cs3",   "96"}, {"cs4",  "128"}, {"cs5",  "160"},
         {"cs6",  "192"}, {"cs7",  "224"},
+        {(char*)NULL,(char*)NULL}
+};
+
+static const char *tosTable[][2] = {
         /* tos names */
         {"lowdelay",         "16"},
         {"throughput",        "8"},
         {"reliability",       "4"},
         {"lowcost",           "2"},
         {"mincost",           "2"},
+        {"tosbit7",           "1"}, /* not a real tos name, but define all */
         /* precedence */
         {"netcontrol",      "224"},
         {"internetcontrol", "192"},
@@ -153,7 +158,6 @@ static const char *tosTable[][2] = {
         {"immediate",        "64"},
         {"priority",         "32"},
         {"routine",           "0"},
-        {"default",           "0"},
         {(char*)NULL,(char*)NULL}
 };
 
@@ -485,14 +489,43 @@ tos2String(int tos, char *buf, size_t buflen)
 {
         int c;
 
-        for (c = 0; tosTable[c][0]; c++) {
-                const char **cur = tosTable[c];
+        if (!buflen) {
+                fprintf(stderr, "%s: tos2String called with buflen=0\n",
+                        argv0);
+                return buf;
+        }
+
+        buf[0] = 0;
+        buf[buflen-1] = 0;
+
+        for (c = 0; dscpTable[c][0]; c++) {
+                const char **cur = dscpTable[c];
                 if (tos == atoi(cur[1])) {
-                        snprintf(buf, buflen, "%s", cur[0]);
+                        snprintf(buf, buflen, "DSCP=%s", cur[0]);
                         return buf;
                 }
         }
-        snprintf(buf, buflen, "0x%.2x", tos);
+
+        for (c = 0; tosTable[c][0]; c++) {
+                const char **cur = tosTable[c];
+                int curTos = atoi(cur[1]);
+                if (curTos && (tos & curTos & 0x1E) == curTos) {
+                        if (buf[0]) {
+                                strncat(buf, ",", buflen);
+                        } else {
+                                strncpy(buf, "ToS=", buflen);
+                        }
+                        strncat(buf, cur[0], buflen);
+                        tos &= ~curTos;
+                }
+        }
+        tos >>= 5;
+        if (tos) {
+                char b[128];
+                snprintf(b, sizeof(b), " Prec=%d", tos);
+                strncat(buf, b, buflen);
+        }
+
         return buf;
 }
 
@@ -557,9 +590,9 @@ recvEchoReply(int fd)
         if (0 <= tos) {
                 char scratch[128];
                 snprintf(tosString, sizeof(tosString),
-                         "ToS=%s ", tos2String(tos,
-                                               scratch,
-                                               sizeof(scratch)));
+                         "%s ", tos2String(tos,
+                                           scratch,
+                                           sizeof(scratch)));
         }
 
         /* check packet size */
@@ -1029,6 +1062,13 @@ string2Tos(const char *instr)
                 *p = tolower(*p);
         }
 
+        /* find match in table */
+        for (c = 0; dscpTable[c][0]; c++) {
+                const char **cur = dscpTable[c];
+                if (!strcmp(lv, cur[0])) {
+                        rets = cur[1];
+                }
+        }
         /* find match in table */
         for (c = 0; tosTable[c][0]; c++) {
                 const char **cur = tosTable[c];

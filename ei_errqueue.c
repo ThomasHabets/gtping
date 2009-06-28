@@ -113,7 +113,8 @@ handleRecvErrSEE(struct sock_extended_err *see,
 		int err;
 		
 		if (offender->sa_family == AF_UNSPEC) {
-			printf("From <unknown>: ");
+                        if (!options.traceroute) { printf("From "); }
+                        printf("<unknown>: ");
 		} else if ((err = getnameinfo(offender,
 					      sizeof(struct sockaddr_storage),
 					      abuf, NI_MAXHOST,
@@ -121,7 +122,8 @@ handleRecvErrSEE(struct sock_extended_err *see,
 					      NI_NUMERICHOST))) {
 			fprintf(stderr, "%s: getnameinfo(): %s\n",
 				argv0, gai_strerror(err));
-                        printf("From <unknown>");
+                        if (!options.traceroute) { printf("From "); }
+                        printf("<unknown>");
                         if (tos) {
                                 printf(" %s", tos);
                         }
@@ -130,7 +132,8 @@ handleRecvErrSEE(struct sock_extended_err *see,
                         }
                         printf(": ");
 		} else {
-                        printf("From %s", abuf);
+                        if (!options.traceroute) { printf("From "); }
+                        printf("%s", abuf);
                         if (tos) {
                                 printf(" %s", tos);
                         }
@@ -174,7 +177,7 @@ handleRecvErrSEE(struct sock_extended_err *see,
 		break;
 	case EHOSTUNREACH:
 		if (isicmp && see->ee_type == 11 && see->ee_code == 0) {
-                        printf("Time to live exceeded");
+                        printf("TTL exceeded");
                         ret = 1;
                 } else {
 			printf("Host unreachable");
@@ -262,7 +265,7 @@ handleRecvErr(int fd, const char *reason, double lastPingTime)
                                 free(tos);
                                 tos = malloc(128);
                                 snprintf(tos, 128,
-                                         "ToS=%s",
+                                         "%s",
                                          tos2String(*(unsigned char*)
                                                     CMSG_DATA(cmsg),
                                                     scratch,
