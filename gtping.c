@@ -1029,7 +1029,6 @@ printVersion()
 static int
 string2Tos(const char *instr)
 {
-        char *lv;
         const char *rets = NULL;
         int ret = -1;
         char *p;
@@ -1052,44 +1051,32 @@ string2Tos(const char *instr)
                 }
         }
 
-        /* lowercase input */
-        lv = strdup(instr);
-        if (!lv) {
-                fprintf(stderr, "%s: strdup(\"%s\") failed\n", argv0, instr);
-                return -1;
-        }
-        for (p = lv; *p; p++) {
-                *p = tolower(*p);
-        }
-
         /* find match in table */
         for (c = 0; dscpTable[c][0]; c++) {
                 const char **cur = dscpTable[c];
-                if (!strcmp(lv, cur[0])) {
+                if (!strcasecmp(instr, cur[0])) {
                         rets = cur[1];
                 }
         }
         /* find match in table */
         for (c = 0; tosTable[c][0]; c++) {
                 const char **cur = tosTable[c];
-                if (!strcmp(lv, cur[0])) {
+                if (!strcasecmp(instr, cur[0])) {
                         rets = cur[1];
                 }
         }
-        
         
         if (rets) {
                 /* if match was found, translate to number */
                 ret = (int)strtol(rets, 0, 0);
         } else {
                 /* if no match, try to parse as a number directly */
-                ret = (int)strtol(lv, 0, 0);
+                ret = (int)strtol(instr, 0, 0);
                 if (!ret) {
                         /* the real case of -Q 0 is handled above */
                         ret = -1;
                 }
         }
-        free(lv);
         if (ret > 255) {
                 ret = -1;
         }
