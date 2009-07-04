@@ -41,7 +41,7 @@ errInspectionPrintSummary()
  *     >1 if other icmp-like error
  */
 int
-handleRecvErr(int fd, const char *reason)
+handleRecvErr(int fd, const char *reason, double lastPingTime)
 {
         fd = fd;
         if (reason) {

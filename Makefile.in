@@ -180,7 +180,7 @@ top_srcdir = @top_srcdir@
 
 # Don't complain about "missing" standard GNU files
 AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall -DINET6=1
 man_MANS = gtping.8
 gtping_SOURCES = gtping.c $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4)

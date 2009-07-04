@@ -3,7 +3,10 @@
  *  By Thomas Habets <thomas@habets.pp.se> 2009
  *
  */
+#ifdef HAVE_STDINT_H
 #include <stdint.h>
+#endif
+
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>

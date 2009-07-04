@@ -29,11 +29,11 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <stdio.h>
 #include <stdarg.h>
-#include <stdlib.h>
 #include <signal.h>
 #include <time.h>
 #include <poll.h>
@@ -377,6 +377,7 @@ setupSocket()
 			}
 #endif
 		}
+#ifdef IPV6_RECVHOPLIMIT
 		if (setsockopt(fd,
 			       SOL_IPV6,
 			       IPV6_RECVHOPLIMIT,
@@ -387,6 +388,8 @@ setupSocket()
 				"IPV6_RECVHOPLIMIT, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
+#endif
+#ifdef IPV6_RECVTCLASS
                 if (setsockopt(fd,
 			       SOL_IPV6,
 			       IPV6_RECVTCLASS,
@@ -397,6 +400,7 @@ setupSocket()
 				"IPV6_RECVTCLASS, on): %s\n",
 				argv0, fd, strerror(errno));
 		}
+#endif
 	}
 
 	/* connect() */

@@ -2,7 +2,7 @@
 
 # Don't complain about "missing" standard GNU files
 AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS=-Wall
+AM_CFLAGS=-Wall -DINET6=1
 
 bin_PROGRAMS = gtping
 man_MANS = gtping.8
