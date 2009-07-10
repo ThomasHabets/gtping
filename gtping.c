@@ -999,6 +999,7 @@ usage(int err)
                "\t-h, --help       Show this help text\n"
                "\t-i <time>        Time between pings (default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
+               "\t                 GTP-C is 2123, GTP-U is port 2152, GTP' is port 3386.\n"
                "\t-Q <dscp>        Set ToS/DSCP bit (default: don't set)\n"
                "\t                 Examples: ef, af21, 0xb8, lowdelay\n"
                "\t-r[<perhop>]     Traceroute. Number of pings per TTL "
@@ -1047,7 +1048,6 @@ string2Tos(const char *instr)
 {
         const char *rets = NULL;
         int ret = -1;
-        char *p;
         const char *cp;
         int c;
 
