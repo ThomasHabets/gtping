@@ -44,18 +44,18 @@ rtt min/avg/max/mdev = 63.551/341.039/606.161/221.692 ms
 $ ./gtping -r1 4.2.2.1
 GTPing 0.14
 GTPING traceroute to 4.2.2.1 (4.2.2.1) 12 bytes of data.
-   1 From x.x.x.x ToS=cs6 ttl=64 time=1.97 ms: Time to live exceeded
-   2 From x.x.x.x ToS=cs6 ttl=63 time=2.68 ms: Time to live exceeded
-   3 From x.x.x.x ToS=cs6 ttl=126 time=20.25 ms: Time to live exceeded
-   4 From 195.84.210.29 ToS=cs6 ttl=252 time=23.11 ms: Time to live exceeded
-   5 From 4.68.111.17 ToS=cs6 ttl=248 time=45.18 ms: Time to live exceeded
-   6 From 4.69.134.25 ToS=cs6 ttl=248 time=35.63 ms: Time to live exceeded
-   7 From 4.69.134.30 ToS=be ttl=57 time=45.78 ms: Time to live exceeded
-   8 From 4.69.141.150 ToS=be ttl=58 time=46.75 ms: Time to live exceeded
-   9 From 4.69.133.89 ToS=be ttl=59 time=51.69 ms: Time to live exceeded
-  10 From 4.69.141.170 ToS=be ttl=59 time=41.87 ms: Time to live exceeded
-  11 From 4.69.132.133 ToS=be ttl=59 time=57.38 ms: Time to live exceeded
-  12 From 4.69.139.98 ToS=cs6 ttl=246 time=57.91 ms: Time to live exceeded
+   1 From x.x.x.x ToS=cs6 ttl=64 time=1.97 ms: TTL exceeded
+   2 From x.x.x.x ToS=cs6 ttl=63 time=2.68 ms: TTL exceeded
+   3 From x.x.x.x ToS=cs6 ttl=126 time=20.25 ms: TTL exceeded
+   4 From 195.84.210.29 ToS=cs6 ttl=252 time=23.11 ms: TTL exceeded
+   5 From 4.68.111.17 ToS=cs6 ttl=248 time=45.18 ms: TTL exceeded
+   6 From 4.69.134.25 ToS=cs6 ttl=248 time=35.63 ms: TTL exceeded
+   7 From 4.69.134.30 ToS=be ttl=57 time=45.78 ms: TTL exceeded
+   8 From 4.69.141.150 ToS=be ttl=58 time=46.75 ms: TTL exceeded
+   9 From 4.69.133.89 ToS=be ttl=59 time=51.69 ms: TTL exceeded
+  10 From 4.69.141.170 ToS=be ttl=59 time=41.87 ms: TTL exceeded
+  11 From 4.69.132.133 ToS=be ttl=59 time=57.38 ms: TTL exceeded
+  12 From 4.69.139.98 ToS=cs6 ttl=246 time=57.91 ms: TTL exceeded
   13 From 4.2.2.1 ToS=be ttl=246 time=57.89 ms: Port closed
 
 -----------------------------------------------------------------------------
