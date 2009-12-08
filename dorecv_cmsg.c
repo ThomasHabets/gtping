@@ -25,9 +25,14 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
 
 #include "gtping.h"
 
