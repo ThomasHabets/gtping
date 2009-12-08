@@ -109,7 +109,7 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
         }
 
 	if (options.verbose > 2) {
-		fprintf(stderr, "%s: doRecv[cmsg]() = %d\n", argv0, n);
+		fprintf(stderr, "%s: doRecv[cmsg]() = %d\n", argv0, (int)n);
 	}
 
         return n;
