@@ -454,7 +454,7 @@ sendEcho(int fd, int seq)
 
 	if (options.verbose > 1) {
 		fprintf(stderr,	"%s: Sending GTP ping with seq=%d size %d\n",
-			argv0, curSeq, sizeof(struct GtpEcho));
+			argv0, curSeq, (int)sizeof(struct GtpEcho));
 	}
 
 	memset(&gtp, 0, sizeof(struct GtpEcho));
