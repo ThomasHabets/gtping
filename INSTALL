@@ -13,5 +13,18 @@ make
 make install
 
 
+System requirements
+===================
+I try to test it on at least these before doing a release:
+* Debian GNU/Linux amd64
+* Debian GNU/Linux x86
+* OpenBSD amd64
+* FreeBSD x86
+* IRIX 6.5 mips
+* Solaris 10 sparc
+
+No special libraries are needed.
+
+
 -----------------------------------------------------------------------------
 Send questions/suggestions/patches/rants/money/routers to thomas@habets.pp.se
