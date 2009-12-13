@@ -6,7 +6,7 @@
 #
 
 AC_PREREQ(2.61)
-AC_INIT([gtping], [0.14], [thomas@habets.pp.se])
+AC_INIT([gtping], [0.15], [thomas@habets.pp.se])
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
 AC_CONFIG_SRCDIR([gtping.c])
