@@ -28,10 +28,6 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-#ifdef HAVE_NETINET_IN6_H
-#include <netinet/in6.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -91,8 +87,12 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
 #ifdef IP_RECVTOS
                         case IP_RECVTOS:
 #endif
+#ifdef IPV6_TCLASS
                         case IPV6_TCLASS:
+#endif
+#ifdef IPV6_RECVTCLASS
                         case IPV6_RECVTCLASS:
+#endif
                                 if (tos) {
                                         *tos=*(unsigned char*)CMSG_DATA(cmsg);
                                 }
@@ -100,7 +100,9 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
                         case IP_TTL:
                         case IP_RECVTTL:
                         case IPV6_HOPLIMIT:
+#ifdef IPV6_RECVHOPLIMIT
                         case IPV6_RECVHOPLIMIT:
+#endif
                                 if (ttl) {
                                         *ttl=*(unsigned char*)CMSG_DATA(cmsg);
                                 }

@@ -260,18 +260,21 @@ handleRecvErr(int fd, const char *reason, double lastPingTime)
 		    || cmsg->cmsg_level == SOL_IPV6) {
 			switch(cmsg->cmsg_type) {
                         case IP_TOS:
-                        case IPV6_TCLASS: {
-                                char scratch[128];
-                                free(tos);
-                                tos = malloc(128);
-                                snprintf(tos, 128,
-                                         "%s",
-                                         tos2String(*(unsigned char*)
-                                                    CMSG_DATA(cmsg),
-                                                    scratch,
-                                                    sizeof(scratch)));
-                                break;
-                        }
+#ifdef IPV6_TCLASS
+                        case IPV6_TCLASS:
+#endif
+                                {
+                                        char scratch[128];
+                                        free(tos);
+                                        tos = malloc(128);
+                                        snprintf(tos, 128,
+                                                 "%s",
+                                                 tos2String(*(unsigned char*)
+                                                            CMSG_DATA(cmsg),
+                                                            scratch,
+                                                            sizeof(scratch)));
+                                        break;
+                                }
 			case IP_RECVERR:
 			case IPV6_RECVERR:
                                 ret = handleRecvErrSEE((struct
