@@ -266,7 +266,14 @@ handleRecvErr(int fd, const char *reason, double lastPingTime)
                                 {
                                         char scratch[128];
                                         free(tos);
-                                        tos = malloc(128);
+                                        if (!(tos = malloc(128))) {
+                                                fprintf(stderr,
+                                                        "%s: "
+                                                        "malloc(128): %s\n",
+                                                        argv0,
+                                                        strerror(errno));
+                                                goto errout;
+                                        }
                                         snprintf(tos, 128,
                                                  "%s",
                                                  tos2String(*(unsigned char*)
