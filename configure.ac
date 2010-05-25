@@ -24,7 +24,7 @@ AC_SEARCH_LIBS([send], [socket])
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h netdb.h netinet/in.h stdlib.h string.h \
+AC_CHECK_HEADERS([arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h string.h \
 sys/socket.h sys/time.h unistd.h memory.h sys/uio.h])
 
 # Checks for typedefs, structures, and compiler characteristics.

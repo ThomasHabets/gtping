@@ -27,6 +27,11 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <netinet/in.h>
+
+#ifdef HAVE_NETINET_IN6_H
+#include <netinet/in6.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
 
