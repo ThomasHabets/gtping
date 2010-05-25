@@ -4383,7 +4383,8 @@ done
 
 
 
-for ac_header in arpa/inet.h netdb.h netinet/in.h stdlib.h string.h \
+
+for ac_header in arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h string.h \
 sys/socket.h sys/time.h unistd.h memory.h sys/uio.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
