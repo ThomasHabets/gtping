@@ -20,9 +20,9 @@ struct GtpEchoV1 {
         union {
                 uint8_t flags;
                 struct {
-                        int n_pdu_flag:1;
-                        int seq_flag:1;
-                        int ext_head_flag:1;
+                        int has_npdu:1;
+                        int has_seq:1;
+                        int has_ext_head:1;
                         int res1:1;
                         int proto_type:1;
                         int version:3;
@@ -53,7 +53,25 @@ struct GtpEchoV2 {
         uint16_t spare;
 };
 #pragma pack()
+struct GtpReply {
+        int ok;
 
+        int version;
+        int msg;
+        int len;
+
+        int has_seq;
+        uint16_t seq;
+
+        int has_teid;
+        uint32_t teid;
+
+        int has_npdu;
+        uint8_t npdu;
+
+        int has_ext_head;
+        uint8_t next;
+};
 
 enum {
         GTPMSG_ECHO = 1,

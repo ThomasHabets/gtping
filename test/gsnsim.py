@@ -5,6 +5,10 @@
 #
 import socket, struct, random, time
 
+def getPacket(fd):
+    data, src = fd.recvfrom(1048576)
+    return data, src[:2]
+
 def getUnpack(fd):
     """getUnpack(fd)
 
@@ -21,19 +25,35 @@ def loopNormal(fd):
     Be a perfect gentleman and always return exactly one reply
     """
     while True:
-        src, (flags,msg,ln,teid,seq,npdu,next) = getUnpack(fd)        
-        if ord(msg) != 1:
-            continue
+        packet, src = getPacket(fd)
+        reply = mkReply(packet)
+        fd.sendto(reply, src)
 
-        fd.sendto(struct.pack('cchihcc',
-                              flags,
-                              chr(2),
-                              ln,
-                              teid,
-                              seq,
-                              npdu,
-                              next),
-                  src)
+def mkReply(req):
+    ver = ord(struct.unpack('c', req[0])[0]) >> 5
+    print "Version: ",ver
+    if ver == 1:
+        flags,msg,ln,teid,seq,npdu,next = struct.unpack('cchihcc', req)
+        if ord(msg) != 1:
+            return
+
+        return struct.pack('cchihcc',
+                           flags,
+                           chr(2),
+                           ln,
+                           teid,
+                           seq,
+                           npdu,
+                           next)
+    elif ver == 2:
+        flags,msg,ln,seq,spare = struct.unpack('cchhh', req)
+        return struct.pack('cchhh',
+                           flags,
+                           chr(2),
+                           ln,
+                           seq,
+                           spare)
+
 
 def loopFixed(fd, num = 2):
     """loopFixed(fd, num = 2)
@@ -121,10 +141,10 @@ def main():
     fd = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     fd.bind( ('', 2123) )
     try:
-        #loopNormal(fd)
+        loopNormal(fd)
         #loopDup(fd)
         #loopRandom(fd)
-        loopJitter(fd, mintime=0, maxtime=1)
+        #loopJitter(fd, mintime=0, maxtime=1)
     except KeyboardInterrupt:
         fd.close()
 

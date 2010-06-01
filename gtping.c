@@ -41,6 +41,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <netdb.h>
+#include <assert.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -441,7 +442,7 @@ mkping_v1(int seq, void **packet)
 
         memset(gtp, 0, sizeof(struct GtpEchoV1));
         gtp->u.s.version = options.version;
-        gtp->u.s.seq_flag = 1;   /* turn on sequence numbers */
+        gtp->u.s.has_seq = 1;   /* turn on sequence numbers */
         gtp->u.s.proto_type = 1; /* GTP, as opposed to GTP' */
         gtp->msg = GTPMSG_ECHO;
         gtp->len = htons(4); /* teid? FIXME */
@@ -588,6 +589,122 @@ tos2String(int tos, char *buf, size_t buflen)
 }
 
 /**
+ *
+ */
+static struct GtpReply
+parseReply_v1(const void *packet, size_t packetlen)
+{
+        struct GtpReply ret;
+        const struct GtpEchoV1 *gtp = packet;
+        memset(&ret, 0, sizeof(ret));
+        /* check packet size */
+
+        if (packetlen < sizeof(struct GtpEchoV1)) {
+                fprintf(stderr, "%s: Short GTPv1 packet received: %d < 12\n",
+                        argv0, (int)packetlen);
+                return ret;
+        }
+
+        if (packetlen > sizeof(struct GtpEchoV1)) {
+                if (options.verbose) {
+                        printf("%s: Long packet received: %d < 12\n",
+                               argv0, (int)packetlen);
+                }
+                /* continue parsing packet... */
+        }
+
+        ret.ok = 1;
+        ret.msg = gtp->msg;
+        ret.version = 1;
+
+        ret.has_seq = gtp->u.s.has_seq;
+        ret.seq = htons(gtp->seq);
+
+        ret.has_teid = 1;
+        ret.teid = htonl(gtp->teid);
+
+        ret.has_npdu = gtp->u.s.has_npdu;
+        ret.npdu = gtp->npdu;
+
+        ret.has_ext_head = gtp->u.s.has_ext_head;
+        ret.next = gtp->next;
+
+        return ret;
+}
+
+/**
+ * FIXME: support for teid
+ */
+static struct GtpReply
+parseReply_v2(const void *packet, size_t packetlen)
+{
+        struct GtpReply ret;
+        const struct GtpEchoV2 *gtp = packet;
+        memset(&ret, 0, sizeof(ret));
+        /* check packet size */
+
+        if (packetlen < sizeof(struct GtpEchoV2)) {
+                fprintf(stderr, "%s: Short GTPv1 packet received: %d < 12\n",
+                        argv0, (int)packetlen);
+                return ret;
+        }
+
+        if (packetlen > sizeof(struct GtpEchoV2)) {
+                if (options.verbose) {
+                        printf("%s: Long packet received: %d < 12\n",
+                               argv0, (int)packetlen);
+                }
+                /* continue parsing packet... */
+        }
+
+        ret.ok = 1;
+        ret.msg = gtp->msg;
+        ret.version = 2;
+
+        ret.has_seq = 1;
+        ret.seq = htons(gtp->seq);
+
+        ret.has_teid = gtp->u.s.has_teid;
+        if (ret.has_teid) {
+                //ret.teid = htonl(gtp->teid);
+                assert(!"Don't handle teid in v2 yet");
+        }
+
+        return ret;
+}
+
+/**
+ *
+ */
+static struct GtpReply
+parseReply(const void *packet, size_t packetlen)
+{
+        const struct GtpEchoV1 *gtp; /* it's ok, we'll just check version */
+        struct GtpReply err;
+        err.ok = 0;
+
+        if (packetlen < 1) {
+                return err;
+        }
+
+        gtp = packet;
+
+        switch (gtp->u.s.version) {
+        case 1:
+                return parseReply_v1(packet, packetlen);
+        case 2:
+                return parseReply_v2(packet, packetlen);
+        }
+
+        fprintf(stderr,
+                "%s: FIXME: Bad version %d\n",
+                argv0, gtp->u.s.version);
+        return err;
+}
+
+
+
+/**
  * return 0 on success/got reply,
  *        <0 on fail. Errno returned.
  *        >0 on success, but no packet (EINTR or dup packet)
@@ -596,8 +713,8 @@ static int
 recvEchoReply(int fd)
 {
 	int err;
-	struct GtpEchoV1 gtp;
-	int n;
+        char packet[1024];
+        ssize_t packetlen;
 	double now;
 	char lag[128];
         int isDup = 0;
@@ -606,7 +723,7 @@ recvEchoReply(int fd)
         int tos;
         char tosString[128] = {0};
         char ttlString[128] = {0};
-        
+        struct GtpReply gtp;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
@@ -614,12 +731,12 @@ recvEchoReply(int fd)
 
 	now = gettimeofday_dbl();
 	
-	memset(&gtp, 0, sizeof(struct GtpEchoV1));
-	if (0 > (n = doRecv(fd,
-                            (void*)&gtp,
-                            sizeof(struct GtpEchoV1),
-                            &ttl,
-                            &tos))) {
+	memset(packet, 0, sizeof(packet));
+        if (0 > (packetlen = doRecv(fd,
+                                    (void*)packet,
+                                    sizeof(packet),
+                                    &ttl,
+                                    &tos))) {
 		switch(errno) {
                 case ECONNREFUSED:
                         connectionRefused++;
@@ -653,26 +770,8 @@ recvEchoReply(int fd)
                                            sizeof(scratch)));
         }
 
-        /* check packet size */
-        if (n < sizeof(struct GtpEchoV1)) {
-                fprintf(stderr, "%s: Short packet received: %d < 12\n",
-                        argv0, n);
-                return 1;
-        }
-        if (n > sizeof(struct GtpEchoV1)) {
-                if (options.verbose) {
-                        printf("%s: Long packet received: %d < 12\n",
-                               argv0, n);
-                }
-                /* continue parsing packet... */
-        }
+        gtp = parseReply(packet, packetlen);
 
-	/* replies use teid 0 */
-	if (0) {
-		if (gtp.teid != htonl(options.teid)) {
-                        return 1;
-		}
-	}
 	if (gtp.msg != GTPMSG_ECHOREPLY) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
@@ -680,10 +779,10 @@ recvEchoReply(int fd)
                 return 0;
 	}
 
-        if (curSeq - htons(gtp.seq) >= TRACKPINGS_SIZE) {
+        if (curSeq - gtp.seq >= TRACKPINGS_SIZE) {
 		strcpy(lag, "Inf");
 	} else {
-                int pos = htons(gtp.seq) % TRACKPINGS_SIZE;
+                int pos = gtp.seq % TRACKPINGS_SIZE;
                 double lagf = now - sendTimes[pos];
                 if (gotIt[pos]) {
                         isDup = 1;
@@ -713,11 +812,11 @@ recvEchoReply(int fd)
 
         /* detect packet reordering */
         if (!isDup) {
-                if (highestSeq > htons(gtp.seq)) {
+                if (highestSeq > gtp.seq) {
                         reorder++;
                         isReorder = 1;
                 } else {
-                        highestSeq = htons(gtp.seq);
+                        highestSeq = gtp.seq;
                 }
         }
 
@@ -726,10 +825,11 @@ recvEchoReply(int fd)
                         printf("\b \b");
                 }
         } else {
-                printf("%u bytes from %s: seq=%u %s%stime=%s%s%s\n",
-                       n,
+                printf("%u bytes from %s: ver=%d seq=%u %s%stime=%s%s%s\n",
+                       (int)packetlen,
                        options.targetip,
-                       htons(gtp.seq),
+                       gtp.version,
+                       gtp.seq,
                        tosString[0] ? tosString : "",
                        ttlString[0] ? ttlString : "",
                        lag,
@@ -759,10 +859,10 @@ tracerouteMainloop(int fd)
         int printStar = 0;
         double timewait;
 
-	printf("GTPING traceroute to %s (%s) %u bytes of data.\n",
+	printf("GTPING traceroute to %s (%s) packet version %d.\n",
 	       options.target,
 	       options.targetip,
-	       (int)sizeof(struct GtpEchoV1));
+	       (int)options.version);
 
 
 	while (!sigintReceived) {
@@ -885,10 +985,10 @@ pingMainloop(int fd)
 
 	startTime = gettimeofday_dbl();
 
-	printf("GTPING %s (%s) %u bytes of data.\n",
+	printf("GTPING %s (%s) packet version %d\n",
 	       options.target,
 	       options.targetip,
-	       (int)sizeof(struct GtpEchoV1));
+	       options.version);
 
         lastRecvTime = startTime;
 	while (!sigintReceived) {
