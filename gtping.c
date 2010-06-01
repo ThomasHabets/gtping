@@ -2,14 +2,14 @@
  *
  * GTP Ping
  *
- * By Thomas Habets <thomas@habets.pp.se> 2008-2009
+ * By Thomas Habets <thomas@habets.pp.se> 2008-2010
  *
  * Send GTP Ping and time the reply.
  *
  *
  */
 /*
- *  Copyright (C) 2008-2009 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2008-2010 Thomas Habets <thomas@habets.pp.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
