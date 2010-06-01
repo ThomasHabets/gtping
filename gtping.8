@@ -27,6 +27,8 @@ Stop after sending \fIcount\fP pings\&. Default is 0 which
 means continue until user presses Ctrl-C\&.
 .IP "-f"
 Flood mode\&.  \fBi\fP is still respected to "flood slowly"\&.
+.IP "-g \fIversion\fP"
+Set GTP version\&.
 .IP "-h, --help"
 Show brief usage info and exit\&.
 .IP "-i \fItime\fP"
@@ -47,7 +49,7 @@ message on stderr if gtping fails to set the value\&.
 Destination UDP port to use\&. Default is 2123 (GTP-C)\&.
 GTP-U is port 2152, GTP\&' is port 3386\&.
 .IP "-t \fIteid\fP"
-Transaction ID to use\&. Default is 0\&.
+Transaction ID to use\&. Default is not present or 0\&.
 .IP "-T \fIttl\fP"
 TTL of IP packet\&. Default is to use system default\&.
 .IP "-V, --version"

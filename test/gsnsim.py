@@ -46,13 +46,26 @@ def mkReply(req):
                            npdu,
                            next)
     elif ver == 2:
-        flags,msg,ln,seq,spare = struct.unpack('cchhh', req)
-        return struct.pack('cchhh',
-                           flags,
-                           chr(2),
-                           ln,
-                           seq,
-                           spare)
+        if len(req) == 8:
+            flags,msg,ln,seq,spare = struct.unpack('cchhh', req)
+            return struct.pack('cchhh',
+                               flags,
+                               chr(2),
+                               ln,
+                               seq,
+                               spare)
+        elif len(req) == 12:
+            flags,msg,ln,teid,seq,spare = struct.unpack('cchihh', req)
+            return struct.pack('cchihh',
+                               flags,
+                               chr(2),
+                               ln,
+                               teid,
+                               seq,
+                               spare)
+
+        else:
+            raise "HELL"
 
 
 def loopFixed(fd, num = 2):

@@ -37,7 +37,7 @@ startdit()
       message on stderr if gtping fails to set the value.
     dit(-p em(port)) Destination UDP port to use. Default is 2123 (GTP-C).
       GTP-U is port 2152, GTP' is port 3386.
-    dit(-t em(teid)) Transaction ID to use. Default is 0.
+    dit(-t em(teid)) Transaction ID to use. Default is not present or 0.
     dit(-T em(ttl)) TTL of IP packet. Default is to use system default.
     dit(-V, --version) Show version and exit.
     dit(-w em(time)) Don't exit before waiting for the last ping for this long.

@@ -108,6 +108,7 @@ struct Options options = {
         targetip: 0,   /* resolved arg */
         ttl: -1,       /* -T <ttl> */
         tos: -1,       /* -Q <dscp> */
+        has_teid: 0,   /* -t <teid> */
         teid: 0,       /* -t <teid> */
         af: AF_UNSPEC, /* -4 or -6 */
         version: DEFAULT_GTPVERSION, /* -g <version> */
@@ -441,12 +442,16 @@ mkping_v1(int seq, void **packet)
         *packet = gtp;
 
         memset(gtp, 0, sizeof(struct GtpEchoV1));
-        gtp->u.s.version = options.version;
-        gtp->u.s.has_seq = 1;   /* turn on sequence numbers */
-        gtp->u.s.proto_type = 1; /* GTP, as opposed to GTP' */
+        gtp->version = options.version;
+        gtp->has_seq = 1;   /* turn on sequence numbers */
+        gtp->proto_type = 1; /* GTP, as opposed to GTP' */
         gtp->msg = GTPMSG_ECHO;
-        gtp->len = htons(4); /* teid? FIXME */
-        gtp->teid = htonl(options.teid);
+        gtp->len = htons(4);
+        if (options.teid >= 0) {
+                gtp->teid = htonl(options.teid);
+        } else {
+                gtp->teid = 0;
+        }
         gtp->seq = htons(seq);
         gtp->npdu = 0x00;
         gtp->next = 0x00;
@@ -468,12 +473,20 @@ mkping_v2(int seq, void **packet)
         *packet = gtp;
 
         memset(gtp, 0, sizeof(struct GtpEchoV2));
-        gtp->u.s.version = options.version;
+        gtp->version = options.version;
         gtp->msg = GTPMSG_ECHO;
-        gtp->len = htons(2); /* only sequence number... or spare too? */
-        gtp->seq = htons(seq);
 
-        return sizeof(struct GtpEchoV2);
+        if (options.has_teid) {
+                gtp->len = htons(4); /* FIXME; 6? */
+                gtp->u2.s.teid = htonl(options.teid);
+                gtp->u2.s.seq = htons(seq);
+                gtp->has_teid = 1;
+                return GTPECHOv2_LEN_WITHOUT_TEID + 4;
+        } else {
+                gtp->len = 0; /* FIXME: 2? */
+                gtp->u2.seq = htons(seq);
+                return GTPECHOv2_LEN_WITHOUT_TEID;
+        }
 }
 
 /**
@@ -617,57 +630,79 @@ parseReply_v1(const void *packet, size_t packetlen)
         ret.msg = gtp->msg;
         ret.version = 1;
 
-        ret.has_seq = gtp->u.s.has_seq;
+        ret.has_seq = gtp->has_seq;
         ret.seq = htons(gtp->seq);
 
         ret.has_teid = 1;
         ret.teid = htonl(gtp->teid);
 
-        ret.has_npdu = gtp->u.s.has_npdu;
+        ret.has_npdu = gtp->has_npdu;
         ret.npdu = gtp->npdu;
 
-        ret.has_ext_head = gtp->u.s.has_ext_head;
+        ret.has_ext_head = gtp->has_ext_head;
         ret.next = gtp->next;
 
         return ret;
 }
 
 /**
- * FIXME: support for teid
+ *
  */
 static struct GtpReply
 parseReply_v2(const void *packet, size_t packetlen)
 {
         struct GtpReply ret;
         const struct GtpEchoV2 *gtp = packet;
-        memset(&ret, 0, sizeof(ret));
-        /* check packet size */
+        size_t right_len = 0;
 
-        if (packetlen < sizeof(struct GtpEchoV2)) {
-                fprintf(stderr, "%s: Short GTPv1 packet received: %d < 12\n",
+        memset(&ret, 0, sizeof(ret));
+
+        /* shortest possible GTPv2 packet is 8 bytes */
+        if (packetlen < GTPECHOv2_LEN_WITHOUT_TEID) {
+                fprintf(stderr,
+                        "%s: Short GTPv2 packet received: %d < 8\n",
                         argv0, (int)packetlen);
                 return ret;
         }
 
-        if (packetlen > sizeof(struct GtpEchoV2)) {
-                if (options.verbose) {
-                        printf("%s: Long packet received: %d < 12\n",
-                               argv0, (int)packetlen);
+        if (gtp->has_teid) {
+                right_len = GTPECHOv2_LEN_WITHOUT_TEID + 4;
+        } else {
+                right_len = GTPECHOv2_LEN_WITHOUT_TEID;
+        }
+
+        if (gtp->piggyback) {
+                fprintf(stderr,
+                        "%s: Get GTP packet with piggyback flag "
+                        "unexpectedly set. "
+                        "Not parsing piggybacked data.",
+                        argv0);
+                if (packetlen > right_len) {
+                        packetlen = right_len;
                 }
-                /* continue parsing packet... */
+        }
+
+        if (packetlen != right_len) {
+                fprintf(stderr,
+                        "%s: GTPv2 packet length error: %d should be %d\n",
+                        argv0, (int)packetlen, (int)right_len);
+                if (packetlen < right_len) {
+                        return ret;
+                }
+                /* continue parsing long packets */
         }
 
         ret.ok = 1;
         ret.msg = gtp->msg;
         ret.version = 2;
-
         ret.has_seq = 1;
-        ret.seq = htons(gtp->seq);
 
-        ret.has_teid = gtp->u.s.has_teid;
+        ret.has_teid = gtp->has_teid;
         if (ret.has_teid) {
-                //ret.teid = htonl(gtp->teid);
-                assert(!"Don't handle teid in v2 yet");
+                ret.teid = htonl(gtp->u2.s.teid);
+                ret.seq = htons(gtp->u2.s.seq);
+        } else {
+                ret.seq = htons(gtp->u2.seq);
         }
 
         return ret;
@@ -689,7 +724,7 @@ parseReply(const void *packet, size_t packetlen)
 
         gtp = packet;
 
-        switch (gtp->u.s.version) {
+        switch (gtp->version) {
         case 1:
                 return parseReply_v1(packet, packetlen);
         case 2:
@@ -697,8 +732,8 @@ parseReply(const void *packet, size_t packetlen)
         }
 
         fprintf(stderr,
-                "%s: FIXME: Bad version %d\n",
-                argv0, gtp->u.s.version);
+                "%s: Bad packet with version %d received\n",
+                argv0, gtp->version);
         return err;
 }
 
@@ -771,12 +806,15 @@ recvEchoReply(int fd)
         }
 
         gtp = parseReply(packet, packetlen);
+        if (!gtp.ok) {
+                return 1;
+        }
 
 	if (gtp.msg != GTPMSG_ECHOREPLY) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
 			argv0, gtp.msg);
-                return 0;
+                return 1;
 	}
 
         if (curSeq - gtp.seq >= TRACKPINGS_SIZE) {
@@ -1163,7 +1201,8 @@ usage(int err)
                "(default: %d)\n"
                "\t                 Traceroute will only work correctly "
                "on Linux.\n"
-               "\t-t <teid>        Transaction ID (default: 0)\n"
+               "\t-t <teid>        Transaction ID "
+               "(default: not present or 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
                "\t-v               Increase verbosity level (default: %d)\n"
                "\t-V, --version    Show version info and exit\n"
@@ -1191,7 +1230,7 @@ usage(int err)
 static void
 printVersion()
 {
-        printf("Copyright (C) 2008-2009 Thomas Habets\n"
+        printf("Copyright (C) 2008-2010 Thomas Habets\n"
                "License GPLv2: GNU GPL version 2 or later "
                "<http://gnu.org/licenses/gpl-2.0.html>\n"
                "This is free software: you are free to change and "
@@ -1286,18 +1325,6 @@ main(int argc, char **argv)
                 }
         }
 
-        /* arbitrary teid. Should be 0, so randomize is off */
-	if (0) {
-		srand(getpid() ^ time(0));
-
-		/* don't know what RAND_MAX is,
-		   so just assume at least 8bits */
-		options.teid = ((((rand() & 0xff) * 256
-				  + (rand() & 0xff)) * 256
-				 + (rand() & 0xff)) * 256
-				+ (rand() & 0xff));
-	}
-
         /* parse options */
 	{
 		int c;
@@ -1345,6 +1372,7 @@ main(int argc, char **argv)
 				break;
 			case 't':
 				options.teid = strtoul(optarg, 0, 0);
+                                options.has_teid = 1;
 				break;
 			case 'T':
 				options.ttl = strtoul(optarg, 0, 0);

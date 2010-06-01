@@ -17,17 +17,13 @@
 /* GTP packet as used with GTP Echo */
 #pragma pack(1)
 struct GtpEchoV1 {
-        union {
-                uint8_t flags;
-                struct {
-                        int has_npdu:1;
-                        int has_seq:1;
-                        int has_ext_head:1;
-                        int res1:1;
-                        int proto_type:1;
-                        int version:3;
-                } s;
-        } u;
+        int has_npdu:1;
+        int has_seq:1;
+        int has_ext_head:1;
+        int res1:1;
+        int proto_type:1;
+        int version:3;
+
         uint8_t msg;
         uint16_t len;
         uint32_t teid;
@@ -37,20 +33,23 @@ struct GtpEchoV1 {
 };
 #pragma pack()
 #pragma pack(1)
+#define GTPECHOv2_LEN_WITHOUT_TEID 8
 struct GtpEchoV2 {
-        union {
-                uint8_t flags;
-                struct {
-                        int spare2:3;
-                        int has_teid:1;
-                        int spare:1;
-                        int version:3;
-                } s;
-        } u;
+        int spare1:3;
+        int has_teid:1;
+        int piggyback:1;
+        int version:3;
+
         uint8_t msg;
         uint16_t len;
-        uint16_t seq;
-        uint16_t spare;
+        union {
+                uint16_t seq;
+                struct {
+                        uint32_t teid;
+                        uint16_t seq;
+                } s;
+        } u2;
+        uint16_t spare2;
 };
 #pragma pack()
 struct GtpReply {
@@ -95,6 +94,7 @@ struct Options {
         double wait;
         int autowait;
         unsigned long count;
+        int has_teid;
         uint32_t teid;
         const char *target;
         char *targetip;
