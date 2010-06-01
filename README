@@ -16,6 +16,11 @@ work on many more.
 The Linux network code exposes more info about why a packet is
 lost. Could be good to know.
 
+GTP Specs at 3GPP:
+  http://www.3gpp.org/ftp/Specs/2009-03/Rel-8/29_series/29060-870.zip
+  http://www.3gpp.org/ftp/Specs/2009-03/Rel-8/29_series/29274-811.zip
+
+http://wired-n-wireless.blogspot.com/2009/02/gtpc-v2.html
 
 License
 -------

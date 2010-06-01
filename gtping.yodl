@@ -21,6 +21,7 @@ startdit()
     dit(-c em(count)) Stop after sending em(count) pings. Default is 0 which
         means continue until user presses Ctrl-C.
     dit(-f) Flood mode.  bf(i) is still respected to "flood slowly".
+    dit(-g em(version)) Set GTP version.
     dit(-h, --help) Show brief usage info and exit.
     dit(-i em(time)) Time in seconds between sending pings. Default is 1.
         Fractional seconds are supported, for example bf(-w) 0.1 will send one

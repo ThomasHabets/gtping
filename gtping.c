@@ -70,19 +70,6 @@
 # define AI_ADDRCONFIG 0
 #endif
 
-/* GTP packet as used with GTP Echo */
-#pragma pack(1)
-struct GtpEcho {
-        uint8_t flags;
-        uint8_t msg;
-        uint16_t len;   
-        uint32_t teid;
-        uint16_t seq;
-        uint8_t npdu;
-        uint8_t next;
-};
-#pragma pack()
-
 static const char *version = PACKAGE_VERSION;
 
 static volatile int sigintReceived = 0;
@@ -122,6 +109,7 @@ struct Options options = {
         tos: -1,       /* -Q <dscp> */
         teid: 0,       /* -t <teid> */
         af: AF_UNSPEC, /* -4 or -6 */
+        version: DEFAULT_GTPVERSION, /* -g <version> */
 
         traceroute: 0, /* -r */
         traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r[<# per hop>] */
@@ -439,48 +427,114 @@ setupSocket()
 }
 
 /**
+ *
+ */
+static size_t
+mkping_v1(int seq, void **packet)
+{
+        struct GtpEchoV1 *gtp;
+        if (!(gtp = malloc(sizeof(struct GtpEchoV1)))) {
+                return -errno;
+        }
+
+        *packet = gtp;
+
+        memset(gtp, 0, sizeof(struct GtpEchoV1));
+        gtp->u.s.version = options.version;
+        gtp->u.s.seq_flag = 1;   /* turn on sequence numbers */
+        gtp->u.s.proto_type = 1; /* GTP, as opposed to GTP' */
+        gtp->msg = GTPMSG_ECHO;
+        gtp->len = htons(4); /* teid? FIXME */
+        gtp->teid = htonl(options.teid);
+        gtp->seq = htons(seq);
+        gtp->npdu = 0x00;
+        gtp->next = 0x00;
+
+        return sizeof(struct GtpEchoV1);
+}
+
+/**
+ *
+ */
+static size_t
+mkping_v2(int seq, void **packet)
+{
+        struct GtpEchoV2 *gtp;
+        if (!(gtp = malloc(sizeof(struct GtpEchoV2)))) {
+                return -errno;
+        }
+
+        *packet = gtp;
+
+        memset(gtp, 0, sizeof(struct GtpEchoV2));
+        gtp->u.s.version = options.version;
+        gtp->msg = GTPMSG_ECHO;
+        gtp->len = htons(2); /* only sequence number... or spare too? */
+        gtp->seq = htons(seq);
+
+        return sizeof(struct GtpEchoV2);
+}
+
+/**
+ *
+ */
+static size_t
+mkping(int seq, void **packet)
+{
+        switch (options.version) {
+        case 1:
+                return mkping_v1(seq, packet);
+        case 2:
+                return mkping_v2(seq, packet);
+        }
+        fprintf(stderr,
+                "%s: internal error, bad version %d\n",
+                argv0, options.version);
+        exit(1);
+}
+
+/**
  * return 0 on succes, <0 on fail (nothing sent), >0 on sent, but something
  * failed (do increment sent counter)
  */
 static int
 sendEcho(int fd, int seq)
 {
-	int err;
-	struct GtpEcho gtp;
+	int err = 0;
+        void *packet = 0;
+        ssize_t packetlen;
 
 	if (options.verbose > 2) {
 		fprintf(stderr, "%s: sendEcho(%d, %d)\n", argv0, fd, seq);
 	}
 
+        if (0 > (packetlen = mkping(seq, &packet))) {
+                err = packetlen;
+                goto errout;
+        }
+
 	if (options.verbose > 1) {
 		fprintf(stderr,	"%s: Sending GTP ping with seq=%d size %d\n",
-			argv0, curSeq, (int)sizeof(struct GtpEcho));
+			argv0, curSeq, (int)packetlen);
 	}
-
-	memset(&gtp, 0, sizeof(struct GtpEcho));
-	gtp.flags = 0x32;
-	gtp.msg = 0x01;
-	gtp.len = htons(4);
-	gtp.teid = htonl(options.teid);
-	gtp.seq = htons(seq);
-	gtp.npdu = 0x00;
-	gtp.next = 0x00;
 
         sendTimes[seq % TRACKPINGS_SIZE] = gettimeofday_dbl();
         gotIt[seq % TRACKPINGS_SIZE] = 0;
 
-	if (sizeof(struct GtpEcho) != send(fd, (void*)&gtp,
-					   sizeof(struct GtpEcho), 0)) {
+	if (packetlen != send(fd, packet, packetlen, 0)) {
 		err = errno;
 		if (err == ECONNREFUSED) {
                         printf("Connection refused\n");
                         connectionRefused++;
-			return err;
+                        goto errout;
 		}
                 fprintf(stderr, "%s: send(%d, ...): %s\n",
                         argv0, fd, strerror(errno));
-		return -err;
+                err = -err;
+                goto errout;
 	}
+ errout:
+        free(packet);
 	return 0;
 }
 
@@ -542,7 +596,7 @@ static int
 recvEchoReply(int fd)
 {
 	int err;
-	struct GtpEcho gtp;
+	struct GtpEchoV1 gtp;
 	int n;
 	double now;
 	char lag[128];
@@ -560,10 +614,10 @@ recvEchoReply(int fd)
 
 	now = gettimeofday_dbl();
 	
-	memset(&gtp, 0, sizeof(struct GtpEcho));
+	memset(&gtp, 0, sizeof(struct GtpEchoV1));
 	if (0 > (n = doRecv(fd,
                             (void*)&gtp,
-                            sizeof(struct GtpEcho),
+                            sizeof(struct GtpEchoV1),
                             &ttl,
                             &tos))) {
 		switch(errno) {
@@ -600,12 +654,12 @@ recvEchoReply(int fd)
         }
 
         /* check packet size */
-        if (n < sizeof(struct GtpEcho)) {
+        if (n < sizeof(struct GtpEchoV1)) {
                 fprintf(stderr, "%s: Short packet received: %d < 12\n",
                         argv0, n);
                 return 1;
         }
-        if (n > sizeof(struct GtpEcho)) {
+        if (n > sizeof(struct GtpEchoV1)) {
                 if (options.verbose) {
                         printf("%s: Long packet received: %d < 12\n",
                                argv0, n);
@@ -619,7 +673,7 @@ recvEchoReply(int fd)
                         return 1;
 		}
 	}
-	if (gtp.msg != 0x02) {
+	if (gtp.msg != GTPMSG_ECHOREPLY) {
 		fprintf(stderr,
 			"%s: Got non-EchoReply type of msg (type: %d)\n",
 			argv0, gtp.msg);
@@ -708,7 +762,7 @@ tracerouteMainloop(int fd)
 	printf("GTPING traceroute to %s (%s) %u bytes of data.\n",
 	       options.target,
 	       options.targetip,
-	       (int)sizeof(struct GtpEcho));
+	       (int)sizeof(struct GtpEchoV1));
 
 
 	while (!sigintReceived) {
@@ -834,7 +888,7 @@ pingMainloop(int fd)
 	printf("GTPING %s (%s) %u bytes of data.\n",
 	       options.target,
 	       options.targetip,
-	       (int)sizeof(struct GtpEcho));
+	       (int)sizeof(struct GtpEchoV1));
 
         lastRecvTime = startTime;
 	while (!sigintReceived) {
@@ -997,6 +1051,7 @@ usage(int err)
                "(default: 0=Infinite)\n"
                "\t-f               Flood ping mode (limit with -i)\n"
                "\t-h, --help       Show this help text\n"
+               "\t-g <version>     Set GTP version (default: %u)\n"
                "\t-i <time>        Time between pings in seconds "
                "(default: %.1f)\n"
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
@@ -1021,8 +1076,12 @@ usage(int err)
                argv0,
                argv0lenSpaces(),
                argv0lenSpaces(),
-               DEFAULT_INTERVAL, DEFAULT_PORT, DEFAULT_TRACEROUTEHOPS,
-               DEFAULT_VERBOSE, DEFAULT_WAIT);
+               DEFAULT_GTPVERSION,
+               DEFAULT_INTERVAL,
+               DEFAULT_PORT,
+               DEFAULT_TRACEROUTEHOPS,
+               DEFAULT_VERBOSE,
+               DEFAULT_WAIT);
         exit(err);
 }
 
@@ -1108,6 +1167,7 @@ int
 main(int argc, char **argv)
 {
 	int fd;
+        int port_set = 0;
 
 	printf("GTPing %s\n", version);
 
@@ -1141,7 +1201,10 @@ main(int argc, char **argv)
         /* parse options */
 	{
 		int c;
-		while (-1 != (c=getopt(argc,argv,"46c:fhi:p:Q:r::t:T:vVw:"))) {
+                unsigned int tmpu;
+		while (-1 != (c=getopt(argc,
+                                       argv,
+                                       "46c:fhi:g:p:Q:r::t:T:vVw:"))) {
 			switch(c) {
                         case '4':
                                 options.af = AF_INET;
@@ -1163,11 +1226,22 @@ main(int argc, char **argv)
                                                 argv0, optarg);
                                 }
                                 break;
+			case 'g':
+				tmpu = strtoul(optarg, 0, 0);
+                                if (tmpu < 1 || tmpu > 2) {
+                                        fprintf(stderr,
+                                                "%s: invalid GTP version %u. "
+                                                "Supported: 1 & 2.",
+                                                argv0, tmpu);
+                                }
+                                options.version = tmpu;
+				break;
 			case 'h':
 				usage(0);
 				break;
 			case 'p':
 				options.port = optarg;
+                                port_set = 1;
 				break;
 			case 't':
 				options.teid = strtoul(optarg, 0, 0);
@@ -1225,6 +1299,7 @@ main(int argc, char **argv)
                                 argv0, options.wait);
                 }
         }
+
 	if (options.verbose) {
 		fprintf(stderr, "%s: transaction id: %.8x\n",
 			argv0, options.teid);

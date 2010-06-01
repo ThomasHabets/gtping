@@ -14,11 +14,58 @@
 
 #include "getaddrinfo.h"
 
+/* GTP packet as used with GTP Echo */
+#pragma pack(1)
+struct GtpEchoV1 {
+        union {
+                uint8_t flags;
+                struct {
+                        int n_pdu_flag:1;
+                        int seq_flag:1;
+                        int ext_head_flag:1;
+                        int res1:1;
+                        int proto_type:1;
+                        int version:3;
+                } s;
+        } u;
+        uint8_t msg;
+        uint16_t len;
+        uint32_t teid;
+        uint16_t seq;
+        uint8_t npdu;
+        uint8_t next;
+};
+#pragma pack()
+#pragma pack(1)
+struct GtpEchoV2 {
+        union {
+                uint8_t flags;
+                struct {
+                        int spare2:3;
+                        int has_teid:1;
+                        int spare:1;
+                        int version:3;
+                } s;
+        } u;
+        uint8_t msg;
+        uint16_t len;
+        uint16_t seq;
+        uint16_t spare;
+};
+#pragma pack()
+
+
+enum {
+        GTPMSG_ECHO = 1,
+        GTPMSG_ECHOREPLY = 2,
+};
+
 /**
  * options
  */
 #define DEFAULT_PORT "2123"
 #define DEFAULT_VERBOSE 0
+#define DEFAULT_GTPVERSION 1
 #define DEFAULT_INTERVAL 1.0
 #define DEFAULT_WAIT 10.0
 #define DEFAULT_TRACEROUTEHOPS 3
@@ -36,6 +83,7 @@ struct Options {
         int ttl;
         int tos;
         int af;
+        unsigned int version;
         int traceroute;
         int traceroutehops;
 };
