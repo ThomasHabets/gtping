@@ -1,0 +1,7 @@
+gtping (0.16-1) stable; urgency=low
+
+  * GTPv2 support
+  * QoS support for send and receive
+  * Traceroute functionality
+
+ -- Thomas Habets <thomas@habets.pp.se>   Mon Jun  7 22:13:32 CEST 2010

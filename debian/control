@@ -1,0 +1,15 @@
+Source: gtping
+Section: net
+Priority: optional
+Maintainer: Thomas Habets <thomas@habets.pp.se>
+Build-Depends: 
+Standards-Version: 3.8.0
+Homepage: http://www.habets.pp.se/synscan/programs.php?prog=gtping
+
+Package: gtping
+Architecture: any
+Depends: ${shlibs:Depends}, lsb-base (>= 3.0-10)
+Conflicts: 
+Description: Send GTP ping to mobile core nodes
+ Like ping(8), but uses GTP ping requests to ping GGSNs and anything
+ else that will answer them.
