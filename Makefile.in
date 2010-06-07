@@ -644,7 +644,9 @@ gtping.8:
 
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
-	rm -f Makefile.in configure autoscan*.log
+	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
+	rm -f debian/substvars debian/files
+	rm -fr debian/tmp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

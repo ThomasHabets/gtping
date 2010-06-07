@@ -37,4 +37,6 @@ gtping.8:
 
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
-	rm -f Makefile.in configure autoscan*.log
+	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
+	rm -f debian/substvars debian/files
+	rm -fr debian/tmp
