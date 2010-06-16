@@ -32,6 +32,11 @@ Installing
 See INSTALL file.
 
 
+Support
+-------
+Official help mailing list is synscan@googlegroups.com.
+
+
 Example use
 -----------
 $ ./gtping -c 3 1.2.3.4
@@ -63,5 +68,5 @@ GTPING traceroute to 4.2.2.1 (4.2.2.1) 12 bytes of data.
   12 From 4.69.139.98 ToS=cs6 ttl=246 time=57.91 ms: TTL exceeded
   13 From 4.2.2.1 ToS=be ttl=246 time=57.89 ms: Port closed
 
------------------------------------------------------------------------------
-Send questions/suggestions/patches/rants/money/routers to thomas@habets.pp.se
+----------------------------------------------------------------------------
+Send questions/suggestions/patches/rants/routers to synscan@googlegroups.com
