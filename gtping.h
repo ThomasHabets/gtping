@@ -104,6 +104,7 @@ struct Options {
         unsigned int version;
         int traceroute;
         int traceroutehops;
+        const char *source;
 };
 
 extern struct Options options;

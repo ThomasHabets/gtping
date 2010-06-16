@@ -113,9 +113,10 @@ struct Options options = {
         af: AF_UNSPEC, /* -4 or -6 */
         version: DEFAULT_GTPVERSION, /* -g <version> */
 
+        source: NULL, /* -s <source if or addr> */
+
         traceroute: 0, /* -r */
         traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r[<# per hop>] */
-        
 };
 
 static const char *dscpTable[][2] = {
@@ -176,6 +177,153 @@ gettimeofday_dbl()
 }
 
 /**
+ *
+ */
+static int
+tryBind(int fd, const struct addrinfo *curaddr)
+{
+        int ret;
+        int err;
+
+        char host[NI_MAXHOST];
+        if ((err = getnameinfo(curaddr->ai_addr,
+                               curaddr->ai_addrlen,
+                               host, sizeof(host),
+                               NULL, 0,
+                               NI_NUMERICHOST))) {
+        }
+
+        ret = bind(fd, curaddr->ai_addr, curaddr->ai_addrlen);
+
+        if (!ret) {
+                /* if ok */
+                if (options.verbose) {
+                        fprintf(stderr,
+                                "%s: successfully bound to %s\n",
+                                argv0,
+                                host);
+                }
+        } else {
+                /* if error */
+                if (options.verbose) {
+                        fprintf(stderr,
+                                "%s: bind(%s): %s\n",
+                                argv0,
+                                host,
+                                strerror(errno));
+                }
+        }
+
+        return ret;
+}
+
+#include <ifaddrs.h>
+
+/**
+ *
+ */
+static struct addrinfo*
+getIfAddrs(const struct addrinfo *dest)
+{
+        struct addrinfo *ret = 0;
+        struct addrinfo *curout = 0;
+        struct ifaddrs *ifa = NULL;
+        struct ifaddrs *curifa;
+        int err;
+
+        err = getifaddrs(&ifa);
+        if (err != 0) {
+                return ret;
+        }
+        for (curifa = ifa;
+             curifa;
+             curifa = curifa->ifa_next) {
+                if (curifa->ifa_addr->sa_family != dest->ai_family) {
+                        continue;
+                }
+                if (strcasecmp(curifa->ifa_name, options.source)) {
+                        continue;
+                }
+
+                if (ret) {
+                        curout->ai_next = malloc(sizeof(struct addrinfo));
+                        curout = curout->ai_next;
+                } else {
+                        ret = malloc(sizeof(struct addrinfo));
+                        curout = ret;
+                }
+                memset(curout, 0, sizeof(struct addrinfo));
+                curout->ai_family = dest->ai_family;
+                curout->ai_socktype = dest->ai_socktype;
+                curout->ai_protocol = dest->ai_protocol;
+                curout->ai_addr = malloc(sizeof(struct sockaddr_storage));
+                curout->ai_addrlen = sizeof(struct sockaddr_storage);
+                memcpy(curout->ai_addr,
+                       curifa->ifa_addr,
+                       sizeof(struct sockaddr_storage));
+        }
+        return ret;
+}
+
+/**
+ *
+ */
+static void
+bindSocket(int fd, const struct addrinfo *dest)
+{
+        struct addrinfo hints;
+        struct addrinfo *addrs = 0;
+        struct addrinfo *curaddr = 0;
+        int err;
+        int gerr;
+        int sock;
+
+        if (!options.source) {
+                return;
+        }
+
+        addrs = getIfAddrs(dest);
+        if (addrs) {
+                goto try_to_bind;
+        }
+
+        /* try to resolve it as an address. By now the target is set up so
+         * we know what we want */
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_flags = AI_ADDRCONFIG;
+        hints.ai_family = dest->ai_family;
+        hints.ai_socktype = dest->ai_socktype;
+        hints.ai_protocol = dest->ai_protocol;
+        if (0 > (gerr = getaddrinfo(options.source,
+                                   "0", /* any port */
+                                   &hints,
+                                   &addrs))) {
+                if (gerr == EAI_SYSTEM) {
+                        fprintf(stderr, "%s: getaddrinfo(%s): %s\n",
+                                argv0, options.source, strerror(errno));
+                }
+                fprintf(stderr, "%s: getaddrinfo(%s): %s\n",
+                        argv0, options.source, gai_strerror(gerr));
+                goto err;
+        }
+
+ try_to_bind:
+        /* try to bind to every one */
+        for (curaddr = addrs; curaddr; curaddr = curaddr->ai_next) {
+                if (!tryBind(fd, curaddr)) {
+                        goto success;
+                }
+        }
+ err:;
+        fprintf(stderr,
+                "%s: bind(%s) failed. "
+                "Address not assigned to any interface?\n",
+                argv0, options.source);
+ success:;
+        freeaddrinfo(addrs);
+}
+
+/**
  * callback function for SIGINT. Will terminate the mainloop.
  */
 static void
@@ -232,8 +380,8 @@ setupSocket()
 			err = EINVAL;
 			goto errout;
 		}
-		fprintf(stderr, "%s: getaddrinfo(): %s\n",
-			argv0, gai_strerror(gai_err));
+                fprintf(stderr, "%s: getaddrinfo(%s): %s\n",
+                        argv0, options.target, gai_strerror(gai_err));
 		goto errout;
 	}
 
@@ -277,6 +425,8 @@ setupSocket()
 	}
 
         errInspectionInit(fd, addrs);
+
+        bindSocket(fd, addrs);
 
 	if (addrs->ai_family == AF_INET) {
                 int on = 1;
@@ -1177,10 +1327,13 @@ usage(int err)
                "[ -i <time> ] "
                "\n       %s "
                "[ -p <port> ] "
+               "[ -Q <dscp> ] "
                "[ -r[<perhop>] ] "
-               "[ -t <teid> ] "
                "\n       %s "
+               "[ -s <source> ] "
+               "[ -t <teid> ] "
                "[ -T <ttl> ] "
+               "\n       %s "
                "[ -w <time> ] "
                "<target>\n"
                "\t-4               Force IPv4 (default: auto-detect)\n"
@@ -1201,6 +1354,7 @@ usage(int err)
                "(default: %d)\n"
                "\t                 Traceroute will only work correctly "
                "on Linux.\n"
+               "\t-s <source>      Use this source address or interface\n"
                "\t-t <teid>        Transaction ID "
                "(default: not present or 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
@@ -1213,6 +1367,7 @@ usage(int err)
                "gtping home page: "
                "<http://www.habets.pp.se/synscan/programs.php?prog=gtping>\n",
                argv0,
+               argv0lenSpaces(),
                argv0lenSpaces(),
                argv0lenSpaces(),
                DEFAULT_GTPVERSION,
@@ -1331,7 +1486,7 @@ main(int argc, char **argv)
                 unsigned int tmpu;
 		while (-1 != (c=getopt(argc,
                                        argv,
-                                       "46c:fhi:g:p:Q:r::t:T:vVw:"))) {
+                                       "46c:fhi:g:p:Q:r::s:t:T:vVw:"))) {
 			switch(c) {
                         case '4':
                                 options.af = AF_INET;
@@ -1370,6 +1525,9 @@ main(int argc, char **argv)
 				options.port = optarg;
                                 port_set = 1;
 				break;
+                        case 's':
+                                options.source = optarg;
+                                break;
 			case 't':
 				options.teid = strtoul(optarg, 0, 0);
                                 options.has_teid = 1;
@@ -1427,11 +1585,6 @@ main(int argc, char **argv)
                                 argv0, options.wait);
                 }
         }
-
-	if (options.verbose) {
-		fprintf(stderr, "%s: transaction id: %.8x\n",
-			argv0, options.teid);
-	}
 
 	if (optind + 1 != argc) {
 		usage(2);
