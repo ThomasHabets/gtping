@@ -191,6 +191,7 @@ tryBind(int fd, const struct addrinfo *curaddr)
                                host, sizeof(host),
                                NULL, 0,
                                NI_NUMERICHOST))) {
+                return 1;
         }
 
         ret = bind(fd, curaddr->ai_addr, curaddr->ai_addrlen);
@@ -219,6 +220,22 @@ tryBind(int fd, const struct addrinfo *curaddr)
 
 #include <ifaddrs.h>
 
+static int
+sockaddrlen(int af)
+{
+        switch(af) {
+        case AF_INET:
+                return sizeof(struct sockaddr_in);
+        case AF_INET6:
+                return sizeof(struct sockaddr_in6);
+        default:
+                fprintf(stderr,
+                        "%s: Internal error: unknown AF %d\n",
+                        argv0, af);
+                return 0;
+        }
+}
+
 /**
  *
  */
@@ -227,6 +244,7 @@ getIfAddrs(const struct addrinfo *dest)
 {
         struct addrinfo *ret = 0;
         struct addrinfo *curout = 0;
+        struct addrinfo *newout;
         struct ifaddrs *ifa = NULL;
         struct ifaddrs *curifa;
         int err;
@@ -241,26 +259,66 @@ getIfAddrs(const struct addrinfo *dest)
                 if (curifa->ifa_addr->sa_family != dest->ai_family) {
                         continue;
                 }
+                if (options.verbose > 1) {
+                        char host[NI_MAXHOST];
+                        int l;
+                        printf("Found iface %s: ", curifa->ifa_name);
+                        l = sockaddrlen(dest->ai_family);
+                        if ((err = getnameinfo(curifa->ifa_addr,
+                                               l,
+                                               host, sizeof(host),
+                                               NULL, 0,
+                                               NI_NUMERICHOST))) {
+                                printf("\n");
+                                fprintf(stderr,
+                                        "%s: getnameinfo(): %s\n",
+                                        argv0,
+                                        gai_strerror(err));
+                        } else {
+                                printf("%s\n", host);
+                        }
+                }
                 if (strcasecmp(curifa->ifa_name, options.source)) {
                         continue;
                 }
 
-                if (ret) {
-                        curout->ai_next = malloc(sizeof(struct addrinfo));
-                        curout = curout->ai_next;
-                } else {
-                        ret = malloc(sizeof(struct addrinfo));
-                        curout = ret;
+                newout = malloc(sizeof(struct addrinfo));
+                if (!newout) {
+                        fprintf(stderr,
+                                "%s: malloc(): %s\n",
+                                argv0,
+                                strerror(errno));
+                        continue;
                 }
-                memset(curout, 0, sizeof(struct addrinfo));
-                curout->ai_family = dest->ai_family;
-                curout->ai_socktype = dest->ai_socktype;
-                curout->ai_protocol = dest->ai_protocol;
-                curout->ai_addr = malloc(sizeof(struct sockaddr_storage));
-                curout->ai_addrlen = sizeof(struct sockaddr_storage);
-                memcpy(curout->ai_addr,
+
+                memset(newout, 0, sizeof(struct addrinfo));
+                newout->ai_family = dest->ai_family;
+                newout->ai_socktype = dest->ai_socktype;
+                newout->ai_protocol = dest->ai_protocol;
+                newout->ai_addrlen = sockaddrlen(newout->ai_family);
+                if (!newout->ai_addrlen) {
+                        free(newout);
+                        continue;
+                }
+                newout->ai_addr = malloc(newout->ai_addrlen);
+                if (!newout->ai_addr) {
+                        fprintf(stderr,
+                                "%s: malloc(): %s\n",
+                                argv0,
+                                strerror(errno));
+                        free(newout);
+                        continue;
+                }
+                memcpy(newout->ai_addr,
                        curifa->ifa_addr,
-                       sizeof(struct sockaddr_storage));
+                       newout->ai_addrlen);
+
+                if (ret) {
+                        curout->ai_next = newout;
+                } else {
+                        ret = newout;
+                }
+                curout = newout;
         }
         return ret;
 }
@@ -274,9 +332,7 @@ bindSocket(int fd, const struct addrinfo *dest)
         struct addrinfo hints;
         struct addrinfo *addrs = 0;
         struct addrinfo *curaddr = 0;
-        int err;
         int gerr;
-        int sock;
 
         if (!options.source) {
                 return;
