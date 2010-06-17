@@ -701,6 +701,8 @@ HAVE_CONTROL_IN_MSGHDR_TRUE
 HAVE_CONTROL_IN_MSGHDR_FALSE
 HAVE_MSG_ERRQUEUE_TRUE
 HAVE_MSG_ERRQUEUE_FALSE
+HAVE_IFADDRS_H_TRUE
+HAVE_IFADDRS_H_FALSE
 LTLIBOBJS'
 ac_subst_files=''
       ac_precious_vars='build_alias
@@ -4384,8 +4386,11 @@ done
 
 
 
-for ac_header in arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h string.h \
-sys/socket.h sys/time.h unistd.h memory.h sys/uio.h
+
+for ac_header in arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h \
+string.h sys/socket.h sys/time.h unistd.h memory.h sys/uio.h \
+ifaddrs.h \
+
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
@@ -5853,6 +5858,15 @@ else
 fi
 
 
+ if test x$ac_cv_header_ifaddrs_h = xyes; then
+  HAVE_IFADDRS_H_TRUE=
+  HAVE_IFADDRS_H_FALSE='#'
+else
+  HAVE_IFADDRS_H_TRUE='#'
+  HAVE_IFADDRS_H_FALSE=
+fi
+
+
 
 # Output
 ac_config_files="$ac_config_files Makefile"
@@ -5985,6 +5999,13 @@ if test -z "${HAVE_MSG_ERRQUEUE_TRUE}" && test -z "${HAVE_MSG_ERRQUEUE_FALSE}"; 
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_MSG_ERRQUEUE\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"HAVE_MSG_ERRQUEUE\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_IFADDRS_H_TRUE}" && test -z "${HAVE_IFADDRS_H_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_IFADDRS_H\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_IFADDRS_H\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -6606,10 +6627,12 @@ HAVE_CONTROL_IN_MSGHDR_TRUE!$HAVE_CONTROL_IN_MSGHDR_TRUE$ac_delim
 HAVE_CONTROL_IN_MSGHDR_FALSE!$HAVE_CONTROL_IN_MSGHDR_FALSE$ac_delim
 HAVE_MSG_ERRQUEUE_TRUE!$HAVE_MSG_ERRQUEUE_TRUE$ac_delim
 HAVE_MSG_ERRQUEUE_FALSE!$HAVE_MSG_ERRQUEUE_FALSE$ac_delim
+HAVE_IFADDRS_H_TRUE!$HAVE_IFADDRS_H_TRUE$ac_delim
+HAVE_IFADDRS_H_FALSE!$HAVE_IFADDRS_H_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 89; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -7,11 +7,30 @@ gtping/INSTALL
 
 Installing
 ==========
+On debian systems I recommend creating a Debian package and installing
+that. See below.
+
+On other systems (or on debian if you like):
 
 ./configure
 make
 make install
 
+
+Making a Debian package (optional)
+==================================
+./debian/rules binary
+
+
+Making a release (maintainer only)
+==================================
+* up version in configure.ac
+* debchange
+* make mrproper
+* autoreconf -i
+* git commit
+* make signed-dist
+* debuild
 
 System requirements
 ===================

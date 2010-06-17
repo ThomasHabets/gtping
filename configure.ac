@@ -24,8 +24,10 @@ AC_SEARCH_LIBS([send], [socket])
 
 # Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h string.h \
-sys/socket.h sys/time.h unistd.h memory.h sys/uio.h])
+AC_CHECK_HEADERS([arpa/inet.h netdb.h netinet/in.h netinet/in6.h stdlib.h \
+string.h sys/socket.h sys/time.h unistd.h memory.h sys/uio.h \
+ifaddrs.h \
+])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -102,6 +104,8 @@ exit(0);
                           )
 ])
 AM_CONDITIONAL(HAVE_MSG_ERRQUEUE, test x$ac_cv_have_msg_errqueue = xyes)
+
+AM_CONDITIONAL(HAVE_IFADDRS_H, test x$ac_cv_header_ifaddrs_h = xyes)
 
 
 # Output

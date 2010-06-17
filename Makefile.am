@@ -19,6 +19,12 @@ else
 gtping_SOURCES += ei_generic.c
 endif
 
+if HAVE_IFADDRS_H
+gtping_SOURCES += ifaddrs_ifaddrs.c
+else
+gtping_SOURCES += ifaddrs_generic.c
+endif
+
 LDADD = $(LIBOBJS)
 
 GIT=git

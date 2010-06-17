@@ -117,6 +117,8 @@ void errInspectionInit(int fd, const struct addrinfo *addrs);
 int handleRecvErr(int fd, const char *reason, double lastPingTime);
 const char *tos2String(int tos, char *buf, size_t buflen);
 double gettimeofday_dbl();
+struct addrinfo* getIfAddrs(const struct addrinfo *dest);
+int sockaddrlen(int af);
 
 /* ---- Emacs Variables ----
  * Local Variables:
