@@ -5,7 +5,7 @@
 gtping \- sends GTP pings to a GSN
 .PP 
 .SH "SYNOPSIS"
-\fBgtping\fP [ \fB-46hfvV\fP ] [ \fB-c\fP \fIcount\fP ] [ \fB-i\fP \fItime\fP ] [ \fB-p\fP \fIport\fP ] [ \fB-Q <dscp>\fP ] [ \fB-t\fP \fIteid\fP ] [ \fB-T\fP \fIttl\fP ] [ \fB-w\fP \fItime\fP ] \fIdestination\fP
+\fBgtping\fP [ \fB-46hfvV\fP ] [ \fB-c\fP \fIcount\fP ] [ \fB-i\fP \fItime\fP ] [ \fB-p\fP \fIport\fP ] [ \fB-Q <dscp>\fP ] [ \fB-s\fP <source iface or addr> ] [ \fB-t\fP \fIteid\fP ] [ \fB-T\fP \fIttl\fP ] [ \fB-w\fP \fItime\fP ] \fIdestination\fP
 .PP 
 .SH "DESCRIPTION"
 \fBgtping\fP sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -35,6 +35,9 @@ Show brief usage info and exit\&.
 Time in seconds between sending pings\&. Default is 1\&.
 Fractional seconds are supported, for example \fB-w\fP 0\&.1 will send one
 ping every 100ms\&.
+.IP "-p \fIport\fP"
+Destination UDP port to use\&. Default is 2123 (GTP-C)\&.
+GTP-U is port 2152, GTP\&' is port 3386\&.
 .IP "-Q \fIdscp\fP"
 Set IP ToS-field\&. Can use symbolic names or numbers\&.
 Symbolic names are: BE,EF,AF[1-4][1-3],CS[0-7] for DSCP values
@@ -45,9 +48,10 @@ precedence or numeric\&.  Use 0x-prefix for hex values and
 0-prefix for octal (E\&.g\&. 0110 for AF21)\&. Some DSCP values such
 as EF require root privileges on some systems\&. You will get a
 message on stderr if gtping fails to set the value\&.
-.IP "-p \fIport\fP"
-Destination UDP port to use\&. Default is 2123 (GTP-C)\&.
-GTP-U is port 2152, GTP\&' is port 3386\&.
+.IP "-s \fIiface or addr\fP"
+Source address to use\&. If given interface name,
+will pick an address from that interface\&. Interface names don\&'t work
+on all OSs\&. Known to work on Linux and OpenBSD\&.
 .IP "-t \fIteid\fP"
 Transaction ID to use\&. Default is not present or 0\&.
 .IP "-T \fIttl\fP"
