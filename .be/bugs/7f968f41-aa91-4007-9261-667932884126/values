@@ -7,7 +7,7 @@ reporter: Thomas Habets <thomas@habets.pp.se>
 severity: minor
 
 
-status: open
+status: closed
 
 
 summary: choose source IP or interface
