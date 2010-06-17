@@ -35,7 +35,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/Makefile.am.common $(top_srcdir)/configure \
 	COPYING INSTALL config/depcomp config/install-sh \
-	config/missing depcomp install-sh missing
+	config/missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/herrno.m4 \
@@ -606,11 +606,6 @@ uninstall-am:
 	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
 	pdf-am ps ps-am tags tags-recursive uninstall uninstall-am
 
-
-mrproper: maintainer-clean
-        rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
-        rm -f Makefile.in configure autoscan*.log config.guess config.sub
-        rm -f ltmain.sh configure.in
 signed-dist:
 	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | $(GZIP) -9 > gtping-$(V).tar.gz
 	$(GPG) -b -a gtping-$(V).tar.gz
@@ -620,6 +615,8 @@ mrproper: maintainer-clean
 	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
 	rm -f debian/substvars debian/files
 	rm -fr debian/tmp
+	rm -fr config
+	mkdir config
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
