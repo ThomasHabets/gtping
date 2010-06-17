@@ -1,31 +1,14 @@
 # gtping/Makefile.am
 
 # Don't complain about "missing" standard GNU files
-AUTOMAKE_OPTIONS = foreign
-AM_CFLAGS=-Wall -DINET6=1
+include $(top_srcdir)/Makefile.am.common
 
-bin_PROGRAMS = gtping
-man_MANS = gtping.8
-gtping_SOURCES = gtping.c
-if HAVE_CONTROL_IN_MSGHDR
-gtping_SOURCES += dorecv_cmsg.c
-else
-gtping_SOURCES += dorecv_generic.c
-endif
+SUBDIRS=src doc
 
-if HAVE_MSG_ERRQUEUE
-gtping_SOURCES += ei_errqueue.c
-else
-gtping_SOURCES += ei_generic.c
-endif
-
-if HAVE_IFADDRS_H
-gtping_SOURCES += ifaddrs_ifaddrs.c
-else
-gtping_SOURCES += ifaddrs_generic.c
-endif
-
-LDADD = $(LIBOBJS)
+mrproper: maintainer-clean
+        rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
+        rm -f Makefile.in configure autoscan*.log config.guess config.sub
+        rm -f ltmain.sh configure.in
 
 GIT=git
 GPG=gpg
@@ -36,13 +19,10 @@ signed-dist:
 	$(GIT) archive --format=tar --prefix=gtping-$(V)/ gtping-$(V) | $(GZIP) -9 > gtping-$(V).tar.gz
 	$(GPG) -b -a gtping-$(V).tar.gz
 
-doc: gtping.8
-
-gtping.8:
-	yodl2man -o gtping.8 gtping.yodl
-
 mrproper: maintainer-clean
 	rm -f aclocal.m4 configure.scan depcomp missing install-sh config.h.in
 	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
 	rm -f debian/substvars debian/files
 	rm -fr debian/tmp
+	rm -fr config
+	mkdir config

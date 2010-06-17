@@ -7,9 +7,10 @@
 
 AC_PREREQ(2.61)
 AC_INIT([gtping], [0.15], [thomas@habets.pp.se])
+AC_CONFIG_AUX_DIR([config])
 AM_INIT_AUTOMAKE
 AM_MAINTAINER_MODE
-AC_CONFIG_SRCDIR([gtping.c])
+AC_CONFIG_SRCDIR([src/gtping.c])
 AC_CONFIG_HEADER(config.h)
 
 # Checks for programs.
@@ -109,7 +110,7 @@ AM_CONDITIONAL(HAVE_IFADDRS_H, test x$ac_cv_header_ifaddrs_h = xyes)
 
 
 # Output
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile doc/Makefile])
 AC_OUTPUT
 
 echo "
