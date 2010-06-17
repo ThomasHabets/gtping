@@ -291,7 +291,11 @@ bindSocket(int fd, const struct addrinfo *dest)
                 "Address not assigned to any interface?\n",
                 argv0, options.source);
  success:;
-        freeaddrinfo(addrs);
+        /* manpage doesn't say what happens if addrs is null, so don't take
+         * any chances */
+        if (addrs) {
+                freeaddrinfo(addrs);
+        }
 }
 
 /**
@@ -1326,6 +1330,7 @@ usage(int err)
                "\t                 Traceroute will only work correctly "
                "on Linux.\n"
                "\t-s <source>      Use this source address or interface\n"
+               "\t                 Interface name will not work on all OSs\n"
                "\t-t <teid>        Transaction ID "
                "(default: not present or 0)\n"
                "\t-T <ttl>         IP TTL (default: system default)\n"
