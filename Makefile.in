@@ -38,8 +38,9 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	config/missing
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/herrno.m4 \
-	$(top_srcdir)/m4/sockinttypes.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/config/herrno.m4 \
+	$(top_srcdir)/config/sockinttypes.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
@@ -615,8 +616,7 @@ mrproper: maintainer-clean
 	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
 	rm -f debian/substvars debian/files
 	rm -fr debian/tmp
-	rm -fr config
-	mkdir config
+	rm -f config/install-sh config/missing config/depcomp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

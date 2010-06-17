@@ -19,5 +19,4 @@ mrproper: maintainer-clean
 	rm -f Makefile.in configure autoscan*.log debian/debhelper.log
 	rm -f debian/substvars debian/files
 	rm -fr debian/tmp
-	rm -fr config
-	mkdir config
+	rm -f config/install-sh config/missing config/depcomp

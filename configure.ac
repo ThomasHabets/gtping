@@ -44,8 +44,8 @@ AC_CHECK_FUNCS([memcpy gettimeofday memset socket sqrt strerror strtoul])
 AC_REPLACE_FUNCS(memset)
 
 # Getaddrinfo
-m4_include([m4/herrno.m4])
-m4_include([m4/sockinttypes.m4])
+m4_include([config/herrno.m4])
+m4_include([config/sockinttypes.m4])
 AC_DECL_H_ERRNO
 AC_TYPE_SOCKLEN_T
 AC_TYPE_IN_PORT_T

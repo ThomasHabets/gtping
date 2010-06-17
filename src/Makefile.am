@@ -3,7 +3,6 @@
 include $(top_srcdir)/Makefile.am.common
 
 bin_PROGRAMS = gtping
-man_MANS = gtping.8
 gtping_SOURCES = gtping.c
 if HAVE_CONTROL_IN_MSGHDR
 gtping_SOURCES += dorecv_cmsg.c
