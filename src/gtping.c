@@ -73,7 +73,7 @@
 
 static const char *version = PACKAGE_VERSION;
 
-static volatile int sigintReceived = 0;
+static volatile sig_atomic_t sigintReceived = 0;
 static unsigned int curSeq = 0;
 static double startTime;
 static double sendTimes[TRACKPINGS_SIZE]; /* RTT data*/
