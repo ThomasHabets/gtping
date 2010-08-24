@@ -3,7 +3,7 @@ manpage(gtping)(8)(8th May, 2009)(gtping)()
 manpagename(gtping)(sends GTP pings to a GSN)
 
 manpagesynopsis()
-    bf(gtping) [ bf(-46hfvV) ] [ bf(-c) em(count) ] [ bf(-i) em(time) ] [ bf(-p) em(port) ] [ bf(-Q <dscp>) ] [ bf(-s) <source iface or addr> ] [ bf(-t) em(teid) ] [ bf(-T) em(ttl) ] [ bf(-w) em(time) ] em(destination)
+    bf(gtping) [ bf(-46hfvV) ] [ bf(-c) em(count) ] [ bf(-i) em(time) ] [ bf(-p) em(port) ] [ -P em(port) ] [ bf(-Q <dscp>) ] [ bf(-s) <source iface or addr> ] [ bf(-t) em(teid) ] [ bf(-T) em(ttl) ] [ bf(-w) em(time) ] em(destination)
 
 manpagedescription()
     bf(gtping) sends GTP Echo requests to GSNs (such as GGSN), and  requests
@@ -28,6 +28,8 @@ startdit()
         ping every 100ms.
     dit(-p em(port)) Destination UDP port to use. Default is 2123 (GTP-C).
       GTP-U is port 2152, GTP' is port 3386.
+    dit(-P em(port)) Source port to use. Default is to use dynamically
+      assigned port.
     dit(-Q em(dscp)) Set IP ToS-field. Can use symbolic names or numbers.
       Symbolic names are: BE,EF,AF[1-4][1-3],CS[0-7] for DSCP values
       (recommended), lowdelay, throughput, lowcost and mincost for IP

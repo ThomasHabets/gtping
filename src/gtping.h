@@ -105,6 +105,7 @@ struct Options {
         int traceroute;
         int traceroutehops;
         const char *source;
+        const char *source_port;
 };
 
 extern struct Options options;

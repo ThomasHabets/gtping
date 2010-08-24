@@ -6,8 +6,9 @@
  *
  * getIfAddrs(dest): return a struct addrinfo linked list of local addresses
  * that can be used when trying to connect to 'dest'.
+ * Interface name must match options.source.
  *
- * Return 0 on error.
+ * Return 0 on error (or no matches).
  *
  * Caller frees using freeaddrinfo()
  */
@@ -39,6 +40,10 @@ getIfAddrs(const struct addrinfo *dest)
         struct ifaddrs *ifa = NULL;
         struct ifaddrs *curifa;
         int err;
+
+        if (!options.source) {
+                return 0;
+        }
 
         err = getifaddrs(&ifa);
         if (err != 0) {

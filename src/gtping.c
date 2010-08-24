@@ -113,7 +113,8 @@ struct Options options = {
         af: AF_UNSPEC, /* -4 or -6 */
         version: DEFAULT_GTPVERSION, /* -g <version> */
 
-        source: NULL, /* -s <source if or addr> */
+        source:      NULL,  /* -s <source if or addr> */
+        source_port: "0",   /* -P <num> */
 
         traceroute: 0, /* -r */
         traceroutehops: DEFAULT_TRACEROUTEHOPS,  /* -r[<# per hop>] */
@@ -248,9 +249,22 @@ bindSocket(int fd, const struct addrinfo *dest)
         struct addrinfo *addrs = 0;
         struct addrinfo *curaddr = 0;
         int gerr;
+        const char *source = options.source;
 
-        if (!options.source) {
-                return;
+        if (!source) {
+                if (!strcmp(options.source_port, "0")) {
+                        return;
+                }
+                if (dest->ai_family == AF_INET) {
+                        source = "0.0.0.0";
+                } else if (dest->ai_family == AF_INET6) {
+                        source = "::";
+                } else {
+                        fprintf(stderr, "%s: Internal error: "
+                                "source unspecified, af of dest unspecified, "
+                                "port specified\n", argv0);
+                        goto err;
+                }
         }
 
         addrs = getIfAddrs(dest);
@@ -265,16 +279,17 @@ bindSocket(int fd, const struct addrinfo *dest)
         hints.ai_family = dest->ai_family;
         hints.ai_socktype = dest->ai_socktype;
         hints.ai_protocol = dest->ai_protocol;
-        if (0 > (gerr = getaddrinfo(options.source,
-                                   "0", /* any port */
-                                   &hints,
-                                   &addrs))) {
+        if (0 > (gerr = getaddrinfo(source,
+                                    options.source_port,
+                                    &hints,
+                                    &addrs))) {
                 if (gerr == EAI_SYSTEM) {
                         fprintf(stderr, "%s: getaddrinfo(%s): %s\n",
-                                argv0, options.source, strerror(errno));
+                                argv0, source, strerror(errno));
                 }
-                fprintf(stderr, "%s: getaddrinfo(%s): %s\n",
-                        argv0, options.source, gai_strerror(gerr));
+                fprintf(stderr, "%s: getaddrinfo(addr=%s, port=%s): %s\n",
+                        argv0, source, options.source_port,
+                        gai_strerror(gerr));
                 goto err;
         }
 
@@ -287,9 +302,9 @@ bindSocket(int fd, const struct addrinfo *dest)
         }
  err:;
         fprintf(stderr,
-                "%s: bind(%s) failed. "
-                "Address not assigned to any interface?\n",
-                argv0, options.source);
+                "%s: bind(addr=%s, port=%s) failed. "
+                "Using dynamic addr/port.\n",
+                argv0, source, options.source_port);
  success:;
         /* manpage doesn't say what happens if addrs is null, so don't take
          * any chances */
@@ -1302,6 +1317,7 @@ usage(int err)
                "[ -i <time> ] "
                "\n       %s "
                "[ -p <port> ] "
+               "[ -P <port> ] "
                "[ -Q <dscp> ] "
                "[ -r[<perhop>] ] "
                "\n       %s "
@@ -1323,6 +1339,8 @@ usage(int err)
                "\t-p <port>        GTP-C UDP port to ping (default: %s)\n"
                "\t                 GTP-C is 2123, GTP-U is port 2152, "
                "GTP' is port 3386.\n"
+               "\t-P <port>        Source port to use. Name or number.\n"
+               "\t                 (default 0 = pick dynamically)\n"
                "\t-Q <dscp>        Set ToS/DSCP bit (default: don't set)\n"
                "\t                 Examples: ef, af21, 0xb8, lowdelay\n"
                "\t-r[<perhop>]     Traceroute. Number of pings per TTL "
@@ -1462,7 +1480,7 @@ main(int argc, char **argv)
                 unsigned int tmpu;
 		while (-1 != (c=getopt(argc,
                                        argv,
-                                       "46c:fhi:g:p:Q:r::s:t:T:vVw:"))) {
+                                       "46c:fhi:g:p:P:Q:r::s:t:T:vVw:"))) {
 			switch(c) {
                         case '4':
                                 options.af = AF_INET;
@@ -1501,6 +1519,9 @@ main(int argc, char **argv)
 				options.port = optarg;
                                 port_set = 1;
 				break;
+                        case 'P':
+                                options.source_port = optarg;
+                                break;
                         case 's':
                                 options.source = optarg;
                                 break;
