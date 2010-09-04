@@ -22,6 +22,7 @@ AC_CHECK_LIB([m], [sqrt])
 AC_SEARCH_LIBS([socket], [socket])
 AC_SEARCH_LIBS([recv], [socket])
 AC_SEARCH_LIBS([send], [socket])
+AC_SEARCH_LIBS([clock_gettime], [rt])
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -105,6 +106,23 @@ exit(0);
                           )
 ])
 AM_CONDITIONAL(HAVE_MSG_ERRQUEUE, test x$ac_cv_have_msg_errqueue = xyes)
+
+# check for CLOCK_MONOTONIC
+AC_CACHE_CHECK([for CLOCK_MONOTONIC],
+                                  ac_cv_have_clock_monotonic, [
+                                  AC_TRY_RUN(
+                                        [
+#include <time.h>
+int main() {
+struct timespec ts;
+exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));
+}
+                ],
+                        [ ac_cv_have_clock_monotonic="yes" ],
+                        [ ac_cv_have_clock_monotonic="no" ]
+                          )
+])
+AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_CLOCK_MONOTONIC = xyes)
 
 AM_CONDITIONAL(HAVE_IFADDRS_H, test x$ac_cv_header_ifaddrs_h = xyes)
 

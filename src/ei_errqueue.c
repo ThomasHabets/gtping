@@ -146,7 +146,7 @@ handleRecvErrSEE(struct sock_extended_err *see,
                         }
                         if (lastPingTime) {
                                 printf(" time=%.2f ms",
-                                       1000*(gettimeofday_dbl()-lastPingTime));
+                                       1000*(monotonic_get_dbl()-lastPingTime));
                         }
                         printf(": ");
 		}

@@ -154,30 +154,6 @@ static const char *tosTable[][2] = {
 };
 
 /**
- * convert struct timeval to double
- */
-static double
-tv2dbl(const struct timeval *tv)
-{
-        return tv->tv_sec + tv->tv_usec / 1000000.0;
-}
-
-/**
- * get seconds since 1970 including fractional seconds
- */
-double
-gettimeofday_dbl()
-{
-	struct timeval tv;
-        if (gettimeofday(&tv, NULL)) {
-		fprintf(stderr,"%s: gettimeofday(): %s\n",
-			argv0, strerror(errno));
-		return time(0);
-	}
-	return tv2dbl(&tv);
-}
-
-/**
  *
  */
 static int
@@ -672,7 +648,7 @@ sendEcho(int fd, int seq)
 			argv0, curSeq, (int)packetlen);
 	}
 
-        sendTimes[seq % TRACKPINGS_SIZE] = gettimeofday_dbl();
+        sendTimes[seq % TRACKPINGS_SIZE] = monotonic_get_dbl();
         gotIt[seq % TRACKPINGS_SIZE] = 0;
 
 	if (packetlen != send(fd, packet, packetlen, 0)) {
@@ -904,7 +880,7 @@ recvEchoReply(int fd)
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
 	}
 
-	now = gettimeofday_dbl();
+	now = monotonic_get_dbl();
 	
 	memset(packet, 0, sizeof(packet));
         if (0 > (packetlen = doRecv(fd,
@@ -1051,7 +1027,7 @@ tracerouteMainloop(int fd)
 		fds.revents = 0;
                 
                 /* time to send yet? */
-		curPingTime = gettimeofday_dbl();
+		curPingTime = monotonic_get_dbl();
 		if ((lastRecvTime >= lastPingTime)
                     || (curPingTime > lastPingTime + options.interval)) {
                         if (printStar) {
@@ -1087,7 +1063,7 @@ tracerouteMainloop(int fd)
                 }
 
                 /* max waittime: until it's time to send the next one */
-		timewait = (lastPingTime+options.interval) -gettimeofday_dbl();
+		timewait = lastPingTime+options.interval - monotonic_get_dbl();
 		if (timewait < 0) {
 			timewait = 0;
 		}
@@ -1100,7 +1076,7 @@ tracerouteMainloop(int fd)
                                 int e;
 				e = handleRecvErr(fd, NULL, lastPingTime);
                                 if (e) {
-                                        lastRecvTime = gettimeofday_dbl();
+                                        lastRecvTime = monotonic_get_dbl();
                                 }
                                 if (e > 1) {
                                         endOfTraceroute = 1;
@@ -1110,7 +1086,7 @@ tracerouteMainloop(int fd)
 				n = recvEchoReply(fd);
                                 endOfTraceroute = 1;
                                 if (!n) {
-                                        lastRecvTime = gettimeofday_dbl();
+                                        lastRecvTime = monotonic_get_dbl();
                                 } else if (n > 0) {
                                         /* still ok, but no reply */
                                         printStar = 1;
@@ -1161,7 +1137,7 @@ pingMainloop(int fd)
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
 	}
 
-	startTime = gettimeofday_dbl();
+	startTime = monotonic_get_dbl();
 
 	printf("GTPING %s (%s) packet version %d\n",
 	       options.target,
@@ -1186,7 +1162,7 @@ pingMainloop(int fd)
                 }
 
                 /* time to send yet? */
-		curPingTime = gettimeofday_dbl();
+		curPingTime = monotonic_get_dbl();
 		if (curPingTime > lastpingTime + options.interval) {
 			if (options.count && (curSeq == options.count)) {
 				if (lastRecvTime+options.wait < curPingTime) {
@@ -1207,7 +1183,7 @@ pingMainloop(int fd)
 		fds.revents = 0;
 		
                 /* max waittime: until it's time to send the next one */
-		timewait = (lastpingTime+options.interval) -gettimeofday_dbl();
+		timewait = lastpingTime+options.interval - monotonic_get_dbl();
 		if (timewait < 0) {
 			timewait = 0;
 		}
@@ -1223,7 +1199,7 @@ pingMainloop(int fd)
 				n = recvEchoReply(fd);
                                 if (!n) {
                                         recvd++;
-                                        lastRecvTime = gettimeofday_dbl();
+                                        lastRecvTime = monotonic_get_dbl();
                                 } else if (n > 0) {
                                         /* still ok, but no reply */
                                 } else { /* n < 0 */
@@ -1263,7 +1239,7 @@ pingMainloop(int fd)
 	       options.target,
                sent, recvd,
 	       (int)((100.0*(sent-recvd))/sent),
-               (int)(1000*(gettimeofday_dbl()-startTime)),
+               (int)(1000*(monotonic_get_dbl()-startTime)),
                reorder, dups,
                connectionRefused);
         errInspectionPrintSummary();

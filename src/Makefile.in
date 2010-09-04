@@ -39,8 +39,10 @@ bin_PROGRAMS = gtping$(EXEEXT)
 @HAVE_CONTROL_IN_MSGHDR_FALSE@am__append_2 = dorecv_generic.c
 @HAVE_MSG_ERRQUEUE_TRUE@am__append_3 = ei_errqueue.c
 @HAVE_MSG_ERRQUEUE_FALSE@am__append_4 = ei_generic.c
-@HAVE_IFADDRS_H_TRUE@am__append_5 = ifaddrs_ifaddrs.c
-@HAVE_IFADDRS_H_FALSE@am__append_6 = ifaddrs_generic.c
+@HAVE_CLOCK_MONOTONIC_TRUE@am__append_5 = monotonic_clock.c
+@HAVE_CLOCK_MONOTONIC_FALSE@am__append_6 = monotonic_generic.c
+@HAVE_IFADDRS_H_TRUE@am__append_7 = ifaddrs_ifaddrs.c
+@HAVE_IFADDRS_H_FALSE@am__append_8 = ifaddrs_generic.c
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/herrno.m4 \
@@ -55,17 +57,21 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__gtping_SOURCES_DIST = gtping.c dorecv_cmsg.c dorecv_generic.c \
-	ei_errqueue.c ei_generic.c ifaddrs_ifaddrs.c ifaddrs_generic.c
+	ei_errqueue.c ei_generic.c monotonic_clock.c \
+	monotonic_generic.c ifaddrs_ifaddrs.c ifaddrs_generic.c
 @HAVE_CONTROL_IN_MSGHDR_TRUE@am__objects_1 = dorecv_cmsg.$(OBJEXT)
 @HAVE_CONTROL_IN_MSGHDR_FALSE@am__objects_2 =  \
 @HAVE_CONTROL_IN_MSGHDR_FALSE@	dorecv_generic.$(OBJEXT)
 @HAVE_MSG_ERRQUEUE_TRUE@am__objects_3 = ei_errqueue.$(OBJEXT)
 @HAVE_MSG_ERRQUEUE_FALSE@am__objects_4 = ei_generic.$(OBJEXT)
-@HAVE_IFADDRS_H_TRUE@am__objects_5 = ifaddrs_ifaddrs.$(OBJEXT)
-@HAVE_IFADDRS_H_FALSE@am__objects_6 = ifaddrs_generic.$(OBJEXT)
+@HAVE_CLOCK_MONOTONIC_TRUE@am__objects_5 = monotonic_clock.$(OBJEXT)
+@HAVE_CLOCK_MONOTONIC_FALSE@am__objects_6 =  \
+@HAVE_CLOCK_MONOTONIC_FALSE@	monotonic_generic.$(OBJEXT)
+@HAVE_IFADDRS_H_TRUE@am__objects_7 = ifaddrs_ifaddrs.$(OBJEXT)
+@HAVE_IFADDRS_H_FALSE@am__objects_8 = ifaddrs_generic.$(OBJEXT)
 am_gtping_OBJECTS = gtping.$(OBJEXT) $(am__objects_1) $(am__objects_2) \
 	$(am__objects_3) $(am__objects_4) $(am__objects_5) \
-	$(am__objects_6)
+	$(am__objects_6) $(am__objects_7) $(am__objects_8)
 gtping_OBJECTS = $(am_gtping_OBJECTS)
 gtping_LDADD = $(LDADD)
 gtping_DEPENDENCIES = $(LIBOBJS)
@@ -172,7 +178,7 @@ AUTOMAKE_OPTIONS = foreign
 DISTCLEANFILES = *~
 gtping_SOURCES = gtping.c $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6)
+	$(am__append_6) $(am__append_7) $(am__append_8)
 LDADD = $(LIBOBJS)
 all: all-am
 
@@ -249,6 +255,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gtping.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ifaddrs_generic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ifaddrs_ifaddrs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monotonic_clock.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/monotonic_generic.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

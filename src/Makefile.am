@@ -16,6 +16,12 @@ else
 gtping_SOURCES += ei_generic.c
 endif
 
+if HAVE_CLOCK_MONOTONIC
+gtping_SOURCES += monotonic_clock.c
+else
+gtping_SOURCES += monotonic_generic.c
+endif
+
 if HAVE_IFADDRS_H
 gtping_SOURCES += ifaddrs_ifaddrs.c
 else
