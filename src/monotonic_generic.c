@@ -19,7 +19,7 @@
  *
  */
 double
-monotonic_get_dbl()
+clock_get_dbl()
 {
         struct timeval tv;
         if (gettimeofday(&tv, NULL)) {

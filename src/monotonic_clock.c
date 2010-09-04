@@ -20,7 +20,7 @@
  *
  */
 double
-monotonic_get_dbl()
+clock_get_dbl()
 {
         struct timespec ts;
         struct timeval tv;

@@ -119,7 +119,7 @@ int handleRecvErr(int fd, const char *reason, double lastPingTime);
 const char *tos2String(int tos, char *buf, size_t buflen);
 struct addrinfo* getIfAddrs(const struct addrinfo *dest);
 int sockaddrlen(int af);
-double monotonic_get_dbl();
+double clock_get_dbl();
 
 /* ---- Emacs Variables ----
  * Local Variables:

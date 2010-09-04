@@ -648,7 +648,7 @@ sendEcho(int fd, int seq)
 			argv0, curSeq, (int)packetlen);
 	}
 
-        sendTimes[seq % TRACKPINGS_SIZE] = monotonic_get_dbl();
+        sendTimes[seq % TRACKPINGS_SIZE] = clock_get_dbl();
         gotIt[seq % TRACKPINGS_SIZE] = 0;
 
 	if (packetlen != send(fd, packet, packetlen, 0)) {
@@ -880,7 +880,7 @@ recvEchoReply(int fd)
 		fprintf(stderr, "%s: recvEchoReply()\n", argv0);
 	}
 
-	now = monotonic_get_dbl();
+	now = clock_get_dbl();
 	
 	memset(packet, 0, sizeof(packet));
         if (0 > (packetlen = doRecv(fd,
@@ -1027,7 +1027,7 @@ tracerouteMainloop(int fd)
 		fds.revents = 0;
                 
                 /* time to send yet? */
-		curPingTime = monotonic_get_dbl();
+		curPingTime = clock_get_dbl();
 		if ((lastRecvTime >= lastPingTime)
                     || (curPingTime > lastPingTime + options.interval)) {
                         if (printStar) {
@@ -1063,7 +1063,7 @@ tracerouteMainloop(int fd)
                 }
 
                 /* max waittime: until it's time to send the next one */
-		timewait = lastPingTime+options.interval - monotonic_get_dbl();
+		timewait = lastPingTime+options.interval - clock_get_dbl();
 		if (timewait < 0) {
 			timewait = 0;
 		}
@@ -1076,7 +1076,7 @@ tracerouteMainloop(int fd)
                                 int e;
 				e = handleRecvErr(fd, NULL, lastPingTime);
                                 if (e) {
-                                        lastRecvTime = monotonic_get_dbl();
+                                        lastRecvTime = clock_get_dbl();
                                 }
                                 if (e > 1) {
                                         endOfTraceroute = 1;
@@ -1086,7 +1086,7 @@ tracerouteMainloop(int fd)
 				n = recvEchoReply(fd);
                                 endOfTraceroute = 1;
                                 if (!n) {
-                                        lastRecvTime = monotonic_get_dbl();
+                                        lastRecvTime = clock_get_dbl();
                                 } else if (n > 0) {
                                         /* still ok, but no reply */
                                         printStar = 1;
@@ -1137,7 +1137,7 @@ pingMainloop(int fd)
 		fprintf(stderr, "%s: mainloop(%d)\n", argv0, fd);
 	}
 
-	startTime = monotonic_get_dbl();
+	startTime = clock_get_dbl();
 
 	printf("GTPING %s (%s) packet version %d\n",
 	       options.target,
@@ -1162,7 +1162,14 @@ pingMainloop(int fd)
                 }
 
                 /* time to send yet? */
-		curPingTime = monotonic_get_dbl();
+		curPingTime = clock_get_dbl();
+
+                /* if clock is not monotonic and time set backwards
+                 * since last ping, start a new ping cycle */
+                if (curPingTime < lastpingTime) {
+                        lastpingTime = curPingTime - options.interval - 0.001;
+                }
+
 		if (curPingTime > lastpingTime + options.interval) {
 			if (options.count && (curSeq == options.count)) {
 				if (lastRecvTime+options.wait < curPingTime) {
@@ -1183,11 +1190,23 @@ pingMainloop(int fd)
 		fds.revents = 0;
 		
                 /* max waittime: until it's time to send the next one */
-		timewait = lastpingTime+options.interval - monotonic_get_dbl();
+                timewait = lastpingTime+options.interval - clock_get_dbl();
+
+                /* never wait more than an interval. this can happen if
+                 * clock is not monotonic */
+                if (timewait > options.interval) {
+                        timewait = options.interval;
+                }
+
+                /* this should never happen, should have been taken care of
+                 * above. */
 		if (timewait < 0) {
 			timewait = 0;
 		}
-                timewait *= 0.5; /* leave room for overhead */
+
+                /* leave room for overhead */
+                timewait *= 0.5;
+
 		switch ((n = poll(&fds, 1, (int)(timewait * 1000)))) {
 		case 1: /* read ready */
 			if (fds.revents & POLLERR) {
@@ -1199,7 +1218,7 @@ pingMainloop(int fd)
 				n = recvEchoReply(fd);
                                 if (!n) {
                                         recvd++;
-                                        lastRecvTime = monotonic_get_dbl();
+                                        lastRecvTime = clock_get_dbl();
                                 } else if (n > 0) {
                                         /* still ok, but no reply */
                                 } else { /* n < 0 */
@@ -1239,7 +1258,7 @@ pingMainloop(int fd)
 	       options.target,
                sent, recvd,
 	       (int)((100.0*(sent-recvd))/sent),
-               (int)(1000*(monotonic_get_dbl()-startTime)),
+               (int)(1000*(clock_get_dbl()-startTime)),
                reorder, dups,
                connectionRefused);
         errInspectionPrintSummary();
