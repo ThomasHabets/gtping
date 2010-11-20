@@ -38,6 +38,8 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_C_VOLATILE
 
+EL_CLOCK_MONOTONIC
+
 # Checks for library functions.
 #AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
@@ -51,7 +53,7 @@ AC_DECL_H_ERRNO
 AC_TYPE_SOCKLEN_T
 AC_TYPE_IN_PORT_T
 AC_CHECK_FUNCS(getaddrinfo getnameinfo)
-if test "$ac_cv_func_getaddrinfo$ac_cv_func_getnameinfo" != yesyes ; then
+if test x"$ac_cv_func_getaddrinfo$ac_cv_func_getnameinfo" != xyesyes ; then
    AC_LIBOBJ(getaddrinfo)
 fi
 
@@ -106,23 +108,6 @@ exit(0);
                           )
 ])
 AM_CONDITIONAL(HAVE_MSG_ERRQUEUE, test x$ac_cv_have_msg_errqueue = xyes)
-
-# check for CLOCK_MONOTONIC
-AC_CACHE_CHECK([for CLOCK_MONOTONIC],
-                                  ac_cv_have_clock_monotonic, [
-                                  AC_TRY_RUN(
-                                        [
-#include <time.h>
-int main() {
-struct timespec ts;
-exit(!!clock_gettime(CLOCK_MONOTONIC, &ts));
-}
-                ],
-                        [ ac_cv_have_clock_monotonic="yes" ],
-                        [ ac_cv_have_clock_monotonic="no" ]
-                          )
-])
-AM_CONDITIONAL(HAVE_CLOCK_MONOTONIC, test x$ac_cv_have_CLOCK_MONOTONIC = xyes)
 
 AM_CONDITIONAL(HAVE_IFADDRS_H, test x$ac_cv_header_ifaddrs_h = xyes)
 
