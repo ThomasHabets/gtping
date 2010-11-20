@@ -45,7 +45,8 @@ bin_PROGRAMS = gtping$(EXEEXT)
 @HAVE_IFADDRS_H_FALSE@am__append_8 = ifaddrs_generic.c
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/herrno.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/config/herrno.m4 \
 	$(top_srcdir)/config/sockinttypes.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
