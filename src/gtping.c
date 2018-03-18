@@ -2,14 +2,14 @@
  *
  * GTP Ping
  *
- * By Thomas Habets <thomas@habets.pp.se> 2008-2010
+ * By Thomas Habets <thomas@habets.se> 2008-2010
  *
  * Send GTP Ping and time the reply.
  *
  *
  */
 /*
- *  Copyright (C) 2008-2010 Thomas Habets <thomas@habets.pp.se>
+ *  Copyright (C) 2008-2010 Thomas Habets <thomas@habets.se>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -93,13 +93,13 @@ const char *argv0 = 0;
 struct Options options = {
         port: DEFAULT_PORT,         /* -p <port> */
         verbose: DEFAULT_VERBOSE,   /* -v increments */
-        
+
         flood: 0,      /* -f */
 
         /* if still <0, set to DEFAULT_INTERVAL.
          * set this way to make -f work with -i  */
         interval: -1,  /* -i <time> */
-        
+
         wait: -1,      /* -w <time> */
         autowait: 0,   /* 0 = -w not used, continuously update options.wait  */
 
@@ -881,7 +881,7 @@ recvEchoReply(int fd)
 	}
 
 	now = clock_get_dbl();
-	
+
 	memset(packet, 0, sizeof(packet));
         if (0 > (packetlen = doRecv(fd,
                                     (void*)packet,
@@ -1025,7 +1025,7 @@ tracerouteMainloop(int fd)
 		fds.fd = fd;
 		fds.events = POLLIN;
 		fds.revents = 0;
-                
+
                 /* time to send yet? */
 		curPingTime = clock_get_dbl();
 		if ((lastRecvTime >= lastPingTime)
@@ -1188,7 +1188,7 @@ pingMainloop(int fd)
 		fds.fd = fd;
 		fds.events = POLLIN;
 		fds.revents = 0;
-		
+
                 /* max waittime: until it's time to send the next one */
                 timewait = lastpingTime+options.interval - clock_get_dbl();
 
@@ -1247,7 +1247,7 @@ pingMainloop(int fd)
 			exit(2);
 			break;
 		}
-			
+
 	}
 	printf("\n--- %s GTP ping statistics ---\n"
                "%u packets transmitted, %u received, "
@@ -1352,7 +1352,7 @@ usage(int err)
                "\t-w <time>        Time to wait for a response "
                "(default: 2*RTT or %.2fs)\n"
                "\n"
-               "Report bugs to: thomas@habets.pp.se\n"
+               "Report bugs to: thomas@habets.se\n"
                "gtping home page: "
                "<http://www.habets.pp.se/synscan/programs.php?prog=gtping>\n",
                argv0,
@@ -1374,7 +1374,7 @@ usage(int err)
 static void
 printVersion()
 {
-        printf("Copyright (C) 2008-2010 Thomas Habets\n"
+        printf("Copyright (C) 2008-2010 Thomas Habets <thomas@habets.se>\n"
                "License GPLv2: GNU GPL version 2 or later "
                "<http://gnu.org/licenses/gpl-2.0.html>\n"
                "This is free software: you are free to change and "
@@ -1404,7 +1404,7 @@ string2Tos(const char *instr)
          * This code depends on instr not being empty (checked above) */
         for (cp = instr; ; cp++) {
                 if (*cp != '0') {
-                        break;  
+                        break;
                 }
                 if (*cp == 0) {
                         return 0;
@@ -1425,7 +1425,7 @@ string2Tos(const char *instr)
                         rets = cur[1];
                 }
         }
-        
+
         if (rets) {
                 /* if match was found, translate to number */
                 ret = (int)strtol(rets, 0, 0);

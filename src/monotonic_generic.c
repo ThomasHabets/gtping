@@ -1,6 +1,6 @@
 /** gtping/src/monotonic_generic.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2010
+ *  By Thomas Habets <thomas@habets.se> 2010
  *
  * get clock from gettimeofday() as if it were monotonic
  */

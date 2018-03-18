@@ -93,5 +93,5 @@ manpageseealso()
     bf(ping(8)), bf(arping(8))
 
 manpageauthor()
-    GTPing was written by Thomas Habets <thomas@habets.pp.se>.
+    GTPing was written by Thomas Habets <thomas@habets.se>.
 

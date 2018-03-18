@@ -1,6 +1,6 @@
 /** gtping/ei_errqueue.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2009
+ *  By Thomas Habets <thomas@habets.se> 2009
  *
  * Handle icmp errors delivered via recvmsg() with MSG_ERRQUEUE.
  *

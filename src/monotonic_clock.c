@@ -1,6 +1,6 @@
 /** gtping/src/monotonic_clock.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2010
+ *  By Thomas Habets <thomas@habets.se> 2010
  *
  * get monotonic clock with clock_gettime(CLOCK_MONOTONIC,)
  */

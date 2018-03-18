@@ -1,7 +1,7 @@
 Source: gtping
 Section: net
 Priority: optional
-Maintainer: Thomas Habets <thomas@habets.pp.se>
+Maintainer: Thomas Habets <thomas@habets.se>
 Build-Depends: debhelper (>= 7.0.15~)
 Standards-Version: 3.8.0
 Homepage: http://www.habets.pp.se/synscan/programs.php?prog=gtping

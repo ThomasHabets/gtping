@@ -1,6 +1,6 @@
 /** gtping/ifaddrs_ifaddrs.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2010
+ *  By Thomas Habets <thomas@habets.se> 2010
  *
  * Systems known to use this code: Linux, OpenBSD
  *

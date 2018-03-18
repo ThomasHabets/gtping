@@ -1,6 +1,6 @@
 /** gtping/gtping.h
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2009
+ *  By Thomas Habets <thomas@habets.se> 2009
  *
  */
 #ifdef HAVE_STDINT_H

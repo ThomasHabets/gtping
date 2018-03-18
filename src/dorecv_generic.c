@@ -1,6 +1,6 @@
 /** gtping/dorecv_generic.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2009
+ *  By Thomas Habets <thomas@habets.se> 2009
  *
  * This provides the recv*() wrapper for systems that don't seem to export
  * ToS or TTL on a packet-by-packet basis at all.

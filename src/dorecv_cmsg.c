@@ -1,6 +1,6 @@
 /** gtping/dorecv_cmsg.c
  *
- *  By Thomas Habets <thomas@habets.pp.se> 2009
+ *  By Thomas Habets <thomas@habets.se> 2009
  *
  * This provides the recv*() wrapper for systems that export ToS and TTL
  * data via msghdr.msg_control
