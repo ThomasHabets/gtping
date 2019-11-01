@@ -827,6 +827,7 @@ parseReply(const void *packet, size_t packetlen)
 {
         const struct GtpEchoV1 *gtp; /* it's ok, we'll just check version */
         struct GtpReply err;
+        memset(&err, 0, sizeof(err));
         err.ok = 0;
 
         if (packetlen < 1) {
