@@ -1253,7 +1253,7 @@ pingMainloop(int fd)
                "%u connection refused",
 	       options.target,
                sent, recvd,
-	       (int)((100.0*(sent-recvd))/sent),
+	       (int)((100.0*(sent-recvd))/(sent?sent:1)),
                (int)(1000*(clock_get_dbl()-startTime)),
                reorder, dups,
                connectionRefused);
