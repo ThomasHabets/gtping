@@ -1531,6 +1531,7 @@ main(int argc, char **argv)
 				break;
                         case 'V':
                                 printVersion();
+                                break;
 			case 'i':
 				options.interval = atof(optarg);
 				break;
