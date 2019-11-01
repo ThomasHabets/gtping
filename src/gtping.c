@@ -516,7 +516,6 @@ setupSocket()
 		err = errno;
 		fprintf(stderr, "%s: connect(%d, ...): %s\n",
 			argv0, fd, strerror(err));
-		close(fd);
 		goto errout;
 	}
 
