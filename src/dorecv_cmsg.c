@@ -93,9 +93,7 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
 #ifdef IPV6_RECVTCLASS
                         case IPV6_RECVTCLASS:
 #endif
-                                if (tos) {
-                                        *tos=*(unsigned char*)CMSG_DATA(cmsg);
-                                }
+                                *tos=*(unsigned char*)CMSG_DATA(cmsg);
                                 break;
                         case IP_TTL:
                         case IP_RECVTTL:
@@ -103,9 +101,7 @@ doRecv(int sock, void *data, size_t len, int *ttl, int *tos)
 #ifdef IPV6_RECVHOPLIMIT
                         case IPV6_RECVHOPLIMIT:
 #endif
-                                if (ttl) {
-                                        *ttl=*(unsigned char*)CMSG_DATA(cmsg);
-                                }
+                                *ttl=*(unsigned char*)CMSG_DATA(cmsg);
                                 break;
                         default:
                                 fprintf(stderr,

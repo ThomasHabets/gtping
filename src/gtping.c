@@ -563,11 +563,7 @@ mkping_v1(int seq, void **packet)
         gtp->proto_type = 1; /* GTP, as opposed to GTP' */
         gtp->msg = GTPMSG_ECHO;
         gtp->len = htons(4);
-        if (options.teid >= 0) {
-                gtp->teid = htonl(options.teid);
-        } else {
-                gtp->teid = 0;
-        }
+        gtp->teid = htonl(options.teid);
         gtp->seq = htons(seq);
         gtp->npdu = 0x00;
         gtp->next = 0x00;
