@@ -694,11 +694,11 @@ tos2String(int tos, char *buf, size_t buflen)
                 int curTos = atoi(cur[1]);
                 if (curTos && (tos & curTos & 0x1E) == curTos) {
                         if (buf[0]) {
-                                strncat(buf, ",", buflen);
+                                strncat(buf, ",", buflen-1);
                         } else {
-                                strncpy(buf, "ToS=", buflen);
+                                strncpy(buf, "ToS=", buflen-1);
                         }
-                        strncat(buf, cur[0], buflen);
+                        strncat(buf, cur[0], buflen-1);
                         tos &= ~curTos;
                 }
         }
@@ -706,7 +706,7 @@ tos2String(int tos, char *buf, size_t buflen)
         if (tos) {
                 char b[128];
                 snprintf(b, sizeof(b), " Prec=%d", tos);
-                strncat(buf, b, buflen);
+                strncat(buf, b, buflen-1);
         }
 
         return buf;
