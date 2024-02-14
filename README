@@ -73,5 +73,12 @@ GTPING traceroute to 4.2.2.1 (4.2.2.1) 12 bytes of data.
   12 From 4.69.139.98 ToS=cs6 ttl=246 time=57.91 ms: TTL exceeded
   13 From 4.2.2.1 ToS=be ttl=246 time=57.89 ms: Port closed
 
+Projects using gtping
+---------------------
+
+  [1] gtp-guard - https://github.com/acassen/gtp-guard
+      gtping is integrated for GTPc testing of gtp-guard, see the test/ folder.
+
 ----------------------------------------------------------------------------
 Send questions/suggestions/patches/rants/routers to synscan@googlegroups.com
+
